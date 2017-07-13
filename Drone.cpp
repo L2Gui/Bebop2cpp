@@ -90,10 +90,36 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort):
     _isValid = !failed;
 }
 
+
+Drone::~Drone() {
+    if(_deviceController != NULL and !isStopped()){
+        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Disconnecting ...");
+
+        eARCONTROLLER_ERROR error = ARCONTROLLER_Device_Stop (_deviceController);
+
+        if (error == ARCONTROLLER_OK)
+        {
+            // wait state update update
+            ARSAL_Sem_Wait (&(_stateSem));
+        }
+
+        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "ARCONTROLLER_Device_Delete ...");
+        ARCONTROLLER_Device_Delete (&_deviceController);
+
+
+        ARSAL_Sem_Destroy (&(_stateSem));
+
+        unlink(_fifo_name);
+        rmdir(_fifo_dir);
+
+        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Drone successfully destroyed");
+    }
+}
+
 bool Drone::connect()
 {
     eARCONTROLLER_ERROR error;
-    if (_isValid && !_isConnected)
+    if (_isValid and !_isConnected)
     {
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Connecting ...");
         error = ARCONTROLLER_Device_Start (_deviceController);
@@ -106,7 +132,7 @@ bool Drone::connect()
             _isConnected = true;
         }
     }
-    bool res = _isValid && _isConnected && !isStopped();
+    bool res = _isValid and _isConnected and !isStopped();
     return res;
 }
 
@@ -158,7 +184,7 @@ bool Drone::modifyPitch(int8_t value){
     if(error2 != ARCONTROLLER_OK){
         ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDFlag command with 1");
     }
-    return error1 == ARCONTROLLER_OK && error2 == ARCONTROLLER_OK;
+    return error1 == ARCONTROLLER_OK and error2 == ARCONTROLLER_OK;
 }
 bool Drone::modifyRoll(int8_t value){
     eARCONTROLLER_ERROR error1 = _deviceController->aRDrone3->setPilotingPCMDRoll(_deviceController->aRDrone3, value);
@@ -171,7 +197,7 @@ bool Drone::modifyRoll(int8_t value){
     if(error2 != ARCONTROLLER_OK){
         ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDFlag command with 1");
     }
-    return error1 == ARCONTROLLER_OK && error2 == ARCONTROLLER_OK;
+    return error1 == ARCONTROLLER_OK and error2 == ARCONTROLLER_OK;
 }
 /// GETTERS
 bool Drone::isConnected() {
@@ -221,9 +247,9 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
         case ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_SENSORSSTATESLISTCHANGED:
             d->cmdSensorStateListChangedRcv(elementDictionary);
             break;
-        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED:
-            d->cmdFlyingStateChangedRcv(elementDictionary);
-            break;
+        //case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED:
+        //    d->cmdFlyingStateChangedRcv(elementDictionary);
+        //    break;
         default:
             break;
     }

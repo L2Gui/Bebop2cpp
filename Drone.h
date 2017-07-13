@@ -22,6 +22,7 @@ class Drone {
 
     public:
     Drone(const std::string& ipAddress = BEBOP_DEFAULT_IP_ADDRESS, unsigned int discoveryPort = BEBOP_DEFAULT_DISCOVERY_PORT);
+    ~Drone();
     /**
      * Return true if connexion is established, false otherwise
      */
