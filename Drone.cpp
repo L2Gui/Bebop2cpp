@@ -122,16 +122,56 @@ bool Drone::takeOff() {
 bool Drone::land(){
     eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingLanding(_deviceController->aRDrone3);
     if(error != ARCONTROLLER_OK){
-        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending takeoff command");
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending land command");
     }
     return error == ARCONTROLLER_OK;
 }
 bool Drone::emergency(){
     eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingEmergency(_deviceController->aRDrone3);
     if(error != ARCONTROLLER_OK){
-        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending takeoff command");
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending emergency command");
     }
     return error == ARCONTROLLER_OK;
+}
+bool Drone::modifyAltitude(int8_t value){
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->setPilotingPCMDGaz(_deviceController->aRDrone3, value);
+    if(error != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDGaz command with %d", value);
+    }
+    return error == ARCONTROLLER_OK;
+}
+bool Drone::modifyYaw(int8_t value){
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->setPilotingPCMDYaw(_deviceController->aRDrone3, value);
+    if(error != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDYaw command with %d", value);
+    }
+    return error == ARCONTROLLER_OK;
+}
+bool Drone::modifyPitch(int8_t value){
+    eARCONTROLLER_ERROR error1 = _deviceController->aRDrone3->setPilotingPCMDPitch(_deviceController->aRDrone3, value);
+    if(error1 != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDPitch command with %d", value);
+    }
+
+
+    eARCONTROLLER_ERROR error2 = _deviceController->aRDrone3->setPilotingPCMDFlag(_deviceController->aRDrone3, 1);
+    if(error2 != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDFlag command with 1");
+    }
+    return error1 == ARCONTROLLER_OK && error2 == ARCONTROLLER_OK;
+}
+bool Drone::modifyRoll(int8_t value){
+    eARCONTROLLER_ERROR error1 = _deviceController->aRDrone3->setPilotingPCMDRoll(_deviceController->aRDrone3, value);
+    if(error1 != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDRoll command with %d", value);
+    }
+
+
+    eARCONTROLLER_ERROR error2 = _deviceController->aRDrone3->setPilotingPCMDFlag(_deviceController->aRDrone3, 1);
+    if(error2 != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending PCMDFlag command with 1");
+    }
+    return error1 == ARCONTROLLER_OK && error2 == ARCONTROLLER_OK;
 }
 /// GETTERS
 bool Drone::isConnected() {
@@ -180,6 +220,9 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             break;
         case ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_SENSORSSTATESLISTCHANGED:
             d->cmdSensorStateListChangedRcv(elementDictionary);
+            break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED:
+            d->cmdFlyingStateChangedRcv(elementDictionary);
             break;
         default:
             break;
@@ -286,6 +329,25 @@ void Drone::cmdBatteryStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *element
 
     // update UI
     std::cout << "New battery lvl " << (int)(arg->value.U8) << std::endl;
+}
+
+void Drone::cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * elementDictionary)
+{
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+
+    // get the command received in the device controller
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        // get the value
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE, arg);
+
+        if (arg != NULL)
+        {
+            _flyingState = (eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE) arg->value.I32;
+        }
+    }
 }
 
 /// PRIVATE

@@ -38,12 +38,45 @@ class Drone {
     bool takeOff();
     bool land();
     bool emergency();
+    /**
+     * Modify the altitude of the drone, adding <value> to the current one.
+     * @param value the value to add in [TODO find unit]
+     * @return true if command was successfully send, false otherwise
+     */
+    bool modifyAltitude(int8_t value);
+    /**
+     * Modify the yaw of the drone, adding <value> to the current one.
+     * A positive value should turn the head of the drone towards the right
+     * A Negative value should turn the head of the drone towards the left
+     * @param value the value to add in [TODO find unit]
+     * @return true if command was successfully send, false otherwise
+     */
+    bool modifyYaw(int8_t value);
+    /**
+     * Modify the pitch of the drone, adding <value> to the current one.
+     * A positive value should move the drone forward
+     * A Negative value should move the drone backward
+     * @param value the value to add in [TODO find unit]
+     * @return true if command was successfully send, false otherwise
+     */
+    bool modifyPitch(int8_t value);
+    /**
+     * Modify the roll of the drone, adding <value> to the current one.
+     * A positive value should roll the drone on the right
+     * A Negative value should roll the drone on the left
+     * @param value the value to add in [TODO find unit]
+     * @return true if command was successfully send, false otherwise
+     */
+    bool modifyRoll(int8_t value);
 
     protected:
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);
+    static void commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey, ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary, void *drone);
+
+
     void cmdSensorStateListChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
     void cmdBatteryStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
-    static void commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey, ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary, void *drone);
+    void cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * elementDictionary);
 
     private:
     std::atomic<bool> _isConnected;
@@ -58,6 +91,7 @@ class Drone {
     ARCONTROLLER_Device_t *_deviceController;
     //eARCONTROLLER_ERROR error;
     eARCONTROLLER_DEVICE_STATE _deviceState;
+    eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE _flyingState;
 
 };
 
