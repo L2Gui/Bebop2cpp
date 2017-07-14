@@ -10,6 +10,8 @@ extern "C" {
 #include <libARDiscovery/ARDiscovery.h>
 }
 
+#include <opencv/cv.hpp>
+
 #define FIFO_DIR_PATTERN "/tmp/arsdk_XXXXXX"
 #define FIFO_NAME "arsdk_fifo"
 // CHANGE TO THE NAME OF THE BEBOP
@@ -34,6 +36,8 @@ class Drone {
     bool isRunning();
     bool isPaused();
     bool isStopping();
+    bool isStreaming();
+    bool errorStream();
 
     /// COMMANDS
     bool takeOff();
@@ -70,6 +74,8 @@ class Drone {
      */
     bool modifyRoll(int8_t value);
 
+    bool startStreaming();
+
     protected:
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);
     static void commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey, ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary, void *drone);
@@ -78,21 +84,25 @@ class Drone {
     void cmdSensorStateListChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
     void cmdBatteryStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
     void cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * elementDictionary);
+    void cmdStreamingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+    static eARCONTROLLER_ERROR decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *customData);
 
     private:
     std::atomic<bool> _isConnected;
     std::atomic<bool> _isValid;
 
-    private:
-
-    //TODO _
     char _fifo_dir[sizeof(FIFO_DIR_PATTERN)] = FIFO_DIR_PATTERN;
     char _fifo_name[128] = "";
+    //TODO _
+    FILE *videoOut = NULL;
+    int frameNb = 0;
     ARSAL_Sem_t _stateSem;
     ARCONTROLLER_Device_t *_deviceController;
     //eARCONTROLLER_ERROR error;
     eARCONTROLLER_DEVICE_STATE _deviceState;
-    eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE _flyingState;
+    std::atomic<eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE> _flyingState;
+    std::atomic<eARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED> _streamingState;
 
 };
 

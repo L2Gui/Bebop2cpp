@@ -1,4 +1,5 @@
 #include <iostream>
+#include <csignal>
 #include "Drone.h"
 
 /// PUBLIC
@@ -87,7 +88,20 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort):
         }
     }
 
+    // add the frame received callback to be informed when a streaming frame has been received from the device
+    /*if (!failed)
+    {
+        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- set Video callback ... ");
+        error = ARCONTROLLER_Device_SetVideoStreamCallbacks (_deviceController, decoderConfigCallback, didReceiveFrameCallback, NULL , NULL);
+
+        if (error != ARCONTROLLER_OK)
+        {
+            failed = 1;
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "- error: %s", ARCONTROLLER_Error_ToString(error));
+        }
+    }*/
     _isValid = !failed;
+    _isConnected = false;
 }
 
 
@@ -132,6 +146,20 @@ bool Drone::connect()
             _isConnected = true;
         }
     }
+
+    if(_isConnected){
+        ARSAL_Sem_Wait (&(_stateSem));
+
+        _deviceState = ARCONTROLLER_Device_GetState (_deviceController, &error);
+
+        if ((error != ARCONTROLLER_OK) || (_deviceState != ARCONTROLLER_DEVICE_STATE_RUNNING))
+        {
+            _isConnected = false;
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "- deviceState :%d", _deviceState);
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "- error :%s", ARCONTROLLER_Error_ToString(error));
+        }
+    }
+
     bool res = _isValid and _isConnected and !isStopped();
     return res;
 }
@@ -199,6 +227,14 @@ bool Drone::modifyRoll(int8_t value){
     }
     return error1 == ARCONTROLLER_OK and error2 == ARCONTROLLER_OK;
 }
+
+
+bool Drone::startStreaming() {
+    _deviceController->aRDrone3->sendMediaStreamingVideoEnable(_deviceController->aRDrone3, 1);
+
+    while(!isStreaming());
+    return !errorStream();
+}
 /// GETTERS
 bool Drone::isConnected() {
     return _isConnected;
@@ -223,6 +259,13 @@ bool Drone::isPaused(){
 bool Drone::isStopping(){
     return _deviceState == ARCONTROLLER_DEVICE_STATE_STOPPING;
 }
+bool Drone::errorStream() {
+    return _streamingState == ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ERROR;
+}
+bool Drone::isStreaming() {
+    return  _streamingState == ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ENABLED;
+}
+
 /// PROTECTED
 /**
  * STATIC
@@ -235,7 +278,6 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
                              void *drone)
 {
     Drone* d = (Drone*)drone;
-
     if (d->_deviceController == NULL)
         return;
 
@@ -247,9 +289,12 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
         case ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_SENSORSSTATESLISTCHANGED:
             d->cmdSensorStateListChangedRcv(elementDictionary);
             break;
-        //case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED:
-        //    d->cmdFlyingStateChangedRcv(elementDictionary);
-        //    break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED:
+            d->cmdFlyingStateChangedRcv(elementDictionary);
+            break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED:
+            d->cmdStreamingStateChangedRcv(elementDictionary);
+            break;
         default:
             break;
     }
@@ -325,6 +370,25 @@ void Drone::cmdSensorStateListChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elem
     }
 }
 
+void Drone::cmdStreamingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary)
+{
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+
+    // get the command received in the device controller
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        // get the value
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED, arg);
+
+        if (arg != NULL)
+        {
+            _streamingState = (eARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED) arg->value.I32;
+        }
+    }
+}
+
 
 void Drone::cmdBatteryStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary)
 {
@@ -374,6 +438,37 @@ void Drone::cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * element
             _flyingState = (eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE) arg->value.I32;
         }
     }
+}
+/**
+ * STATIC
+ * @param codec
+ * @param customData
+ * @return
+ */
+eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *drone)
+{
+    Drone* d = (Drone*)drone;
+    if (d->videoOut != NULL)
+    {
+        if (codec.type == ARCONTROLLER_STREAM_CODEC_TYPE_H264)
+        {
+            //TODO FIND OUT IF DECODING IS NEEDED
+            if (true)
+            {
+                fwrite(codec.parameters.h264parameters.spsBuffer, codec.parameters.h264parameters.spsSize, 1, d->videoOut);
+                fwrite(codec.parameters.h264parameters.ppsBuffer, codec.parameters.h264parameters.ppsSize, 1, d->videoOut);
+
+                fflush (d->videoOut);
+            }
+        }
+
+    }
+    else
+    {
+        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "videoOut is NULL.");
+    }
+
+    return ARCONTROLLER_OK;
 }
 
 /// PRIVATE
