@@ -12,7 +12,7 @@ target_link_libraries(bebop arsal ardiscovery arcontroller curses)
 find_package(OpenCV REQUIRED)
 add_library(libbebop2 Drone.cpp)
 target_link_libraries(libbebop2 ${OpenCV_LIBS})
-target_link_libraries(libbebop2 arsal ardiscovery arcontroller)
+target_link_libraries(libbebop2 arsal ardiscovery arcontroller arnetwork arcommands arnetworkal)
 
 add_executable(demo demo.cpp)
 target_link_libraries(demo libbebop2)

@@ -1,14 +1,17 @@
 #ifndef BEBOP_DRONE_H
 #define BEBOP_DRONE_H
 
-#include <atomic>
-#include <iostream>
-
 extern "C" {
 #include <libARSAL/ARSAL.h>
 #include <libARController/ARController.h>
 #include <libARDiscovery/ARDiscovery.h>
+#include <libARNetwork/ARNetwork.h>
+#include <libARController/ARCONTROLLER_Frame.h>
 }
+
+#include <atomic>
+#include <iostream>
+
 
 #include <opencv/cv.hpp>
 
@@ -19,11 +22,16 @@ extern "C" {
 
 #define BEBOP_DEFAULT_IP_ADDRESS "192.168.42.1"
 #define BEBOP_DEFAULT_DISCOVERY_PORT 44444
+#define BEBOP_DEFAULT_C2D_PORT 54321 // should be read from Json
+#define BEBOP_DEFAULT_D2C_PORT 43210
 
 class Drone {
 
-    public:
-    Drone(const std::string& ipAddress = BEBOP_DEFAULT_IP_ADDRESS, unsigned int discoveryPort = BEBOP_DEFAULT_DISCOVERY_PORT);
+public:
+    Drone(const std::string& ipAddress = BEBOP_DEFAULT_IP_ADDRESS,
+          unsigned int discoveryPort = BEBOP_DEFAULT_DISCOVERY_PORT,
+          unsigned int c2dPort = BEBOP_DEFAULT_C2D_PORT,
+          unsigned int d2cPort = BEBOP_DEFAULT_D2C_PORT);
     ~Drone();
     /**
      * Return true if connexion is established, false otherwise
@@ -74,9 +82,13 @@ class Drone {
      */
     bool modifyRoll(int8_t value);
 
-    bool startStreaming();
+    bool startStreamingME();
+    //bool startStreamingEXPL();
 
-    protected:
+
+    std::string getVideoPath();
+
+protected:
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);
     static void commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey, ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary, void *drone);
 
@@ -88,7 +100,25 @@ class Drone {
 
     static eARCONTROLLER_ERROR decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *customData);
 
-    private:
+private:
+    /// Utility functions
+    bool ardiscoveryConnect();
+
+    /*
+    bool startNetwork();
+    void stopNetwork();
+
+    static eARNETWORK_MANAGER_CALLBACK_RETURN arnetworkCmdCallback(int buffer_id, uint8_t *data, void *drone, eARNETWORK_MANAGER_CALLBACK_STATUS cause);
+     */
+    static eARDISCOVERY_ERROR ARDISCOVERY_Connection_SendJsonCallback (uint8_t *dataTx, uint32_t *dataTxSize, void *drone);
+    static eARDISCOVERY_ERROR ARDISCOVERY_Connection_ReceiveJsonCallback (uint8_t *dataRx, uint32_t dataRxSize, char *ip, void *drone);
+
+    //static void onDisconnectNetwork (ARNETWORK_Manager_t *manager, ARNETWORKAL_Manager_t *alManager, void *drone);
+
+    static eARCONTROLLER_ERROR didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame, void *customData);
+    /// Attributes
+    std::string _ip;
+    int _discoveryPort;
     std::atomic<bool> _isConnected;
     std::atomic<bool> _isValid;
 
@@ -99,6 +129,17 @@ class Drone {
     int frameNb = 0;
     ARSAL_Sem_t _stateSem;
     ARCONTROLLER_Device_t *_deviceController;
+
+    /// Video
+    int _d2cPort;
+    int _c2dPort;
+    ARNETWORKAL_Manager_t *_alManager;
+    ARNETWORK_Manager_t *_netManager;
+    ARSAL_Thread_t _rxThread;
+    ARSAL_Thread_t _txThread;
+    ARSAL_Thread_t _videoTxThread;
+    ARSAL_Thread_t _videoRxThread;
+
     //eARCONTROLLER_ERROR error;
     eARCONTROLLER_DEVICE_STATE _deviceState;
     std::atomic<eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE> _flyingState;

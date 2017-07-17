@@ -1,12 +1,16 @@
 #include "Drone.h"
 
+#include "streaming.h"
+
 int main(){
+
 
     Drone d;
 
     assert(d.isValid());
 
     assert(d.connect());
+
 
     while(!d.isRunning()){
         sleep(1);
@@ -19,22 +23,35 @@ int main(){
     assert(d.emergency());
 */
 
-    assert(d.startStreaming());
+    assert(d.startStreamingME());
 
-    //cv::VideoCapture cap("./bebop.sdp");
 
-    while(1)
-        sleep(1);
-    /*
-    assert(cap.isOpened());
+
+    std::cout << "EVERYTHING IS OK" << std::endl;
+
+
+/*
+    initStream();
+*/
+
+    cv::VideoCapture cap(d.getVideoPath());
+    while(!cap.isOpened()){
+        cap = cv::VideoCapture(d.getVideoPath());
+    }
 
     while(true)
     {
         cv::Mat frame;
         cap >> frame;
-        cv::imshow("frame", frame);
+        if(frame.data != NULL){
+            cv::imshow("frame", frame);
+        }
+
         cv::waitKey(1);
     }
-     */
-    return 1;
+
+    while(1)
+        sleep(1);
+
+    return 0;
 }

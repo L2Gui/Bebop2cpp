@@ -1,11 +1,35 @@
-#include <iostream>
+/**
+ * Includes
+ */
 #include <csignal>
+#include <errno.h>
+#include <vector>
+
 #include "Drone.h"
 
+/**
+ * Some implementation
+ */
+/* removed **/
+
+/**
+ * Some more define to clean out
+ */
+#define BD_CLIENT_STREAM_PORT 55004
+#define BD_CLIENT_CONTROL_PORT 55005
+
+/**
+ * Methods
+ */
+
 /// PUBLIC
-Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort):
+Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned int c2dPort, unsigned int d2cPort):
         _deviceController(NULL),
-        _deviceState(ARCONTROLLER_DEVICE_STATE_MAX)
+        _deviceState(ARCONTROLLER_DEVICE_STATE_MAX),
+        _ip(ipAddress),
+        _discoveryPort(discoveryPort),
+        _c2dPort(c2dPort),
+        _d2cPort(d2cPort)
 {
     bool failed = false;
     ARDISCOVERY_Device_t *device = NULL;
@@ -21,7 +45,8 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort):
     }
     snprintf(_fifo_name, sizeof(_fifo_name), "%s/%s", _fifo_dir, FIFO_NAME);
 
-    if(mkfifo(_fifo_name, 0666) < 0)
+    videoOut = fopen(_fifo_name, "wb+");
+    if(videoOut == NULL)
     {
         ARSAL_PRINT(ARSAL_PRINT_ERROR, "ERROR", "Mkfifo failed: %d, %s", errno, strerror(errno));
         _isValid = false;
@@ -30,14 +55,29 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort):
 
     ARSAL_Sem_Init (&(_stateSem), 0, 0);
 
-    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- init discovey device ... ");
+    /**
+     * Exchanging JSON information with the drone
+     */
+    this->ardiscoveryConnect();
 
+
+    /**
+     *  Getting Network controller
+     */
+    if (!failed)
+    {
+        /* start */
+        //failed = this->startNetwork();
+    }
+    /**
+     * Creating device controller
+     */
     eARDISCOVERY_ERROR errorDiscovery = ARDISCOVERY_OK;
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- init discovey device ... ");
     device = ARDISCOVERY_Device_New (&errorDiscovery);
-
     if (errorDiscovery == ARDISCOVERY_OK) {
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "    - ARDISCOVERY_Device_InitWifi ...");
-        errorDiscovery = ARDISCOVERY_Device_InitWifi (device, ARDISCOVERY_PRODUCT_BEBOP_2, "bebop2", ipAddress.c_str(), discoveryPort);
+        errorDiscovery = ARDISCOVERY_Device_InitWifi (device, ARDISCOVERY_PRODUCT_BEBOP_2, "bebop2", _ip.c_str(), discoveryPort);
 
         if (errorDiscovery != ARDISCOVERY_OK)
         {
@@ -89,17 +129,17 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort):
     }
 
     // add the frame received callback to be informed when a streaming frame has been received from the device
-    /*if (!failed)
+    if (!failed)
     {
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- set Video callback ... ");
-        error = ARCONTROLLER_Device_SetVideoStreamCallbacks (_deviceController, decoderConfigCallback, didReceiveFrameCallback, NULL , NULL);
+        error = ARCONTROLLER_Device_SetVideoStreamCallbacks (_deviceController, decoderConfigCallback, didReceiveFrameCallback, NULL , this);
 
         if (error != ARCONTROLLER_OK)
         {
             failed = 1;
             ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "- error: %s", ARCONTROLLER_Error_ToString(error));
         }
-    }*/
+    }
     _isValid = !failed;
     _isConnected = false;
 }
@@ -229,12 +269,48 @@ bool Drone::modifyRoll(int8_t value){
 }
 
 
-bool Drone::startStreaming() {
+bool Drone::startStreamingME() {
+/*
+    cv::VideoCapture cv(_fifo_name);
+
+    videoOut = fopen(_fifo_name, "w");
+    if(videoOut == NULL)
+        return false;
+*/
     _deviceController->aRDrone3->sendMediaStreamingVideoEnable(_deviceController->aRDrone3, 1);
 
     while(!isStreaming());
     return !errorStream();
 }
+
+/*
+bool Drone::startStreamingEXPL()
+{
+    bool sentStatus = true;
+    uint8_t cmdBuffer[128];
+    int32_t cmdSize = 0;
+    eARCOMMANDS_GENERATOR_ERROR cmdError;
+    eARNETWORK_ERROR netError = ARNETWORK_ERROR;
+
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- Send Streaming Begin");
+
+    // Send Streaming begin command
+    cmdError = ARCOMMANDS_Generator_GenerateARDrone3MediaStreamingVideoEnable(cmdBuffer, sizeof(cmdBuffer), &cmdSize, 1);
+    if (cmdError == ARCOMMANDS_GENERATOR_OK)
+    {
+        netError = ARNETWORK_Manager_SendData(_netManager, BD_NET_CD_ACK_ID, cmdBuffer, cmdSize, this, arnetworkCmdCallback, 1);
+    }
+
+    if ((cmdError != ARCOMMANDS_GENERATOR_OK) || (netError != ARNETWORK_OK))
+    {
+        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "Failed to send Streaming command. cmdError:%d netError:%s", cmdError, ARNETWORK_Error_ToString(netError));
+        sentStatus = false;
+    }
+
+    return sentStatus;
+}
+*/
+
 /// GETTERS
 bool Drone::isConnected() {
     return _isConnected;
@@ -447,6 +523,7 @@ void Drone::cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * element
  */
 eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *drone)
 {
+    ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "DECODE CONFIG");
     Drone* d = (Drone*)drone;
     if (d->videoOut != NULL)
     {
@@ -465,10 +542,258 @@ eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t co
     }
     else
     {
-        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "videoOut is NULL.");
+        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "videoOut is NULL !!!!!! 605.");
     }
 
     return ARCONTROLLER_OK;
 }
 
 /// PRIVATE
+
+bool Drone::ardiscoveryConnect ()
+{
+    bool failed = false;
+
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- ARDiscovery Connection");
+
+    eARDISCOVERY_ERROR err = ARDISCOVERY_OK;
+    ARDISCOVERY_Connection_ConnectionData_t *discoveryData = ARDISCOVERY_Connection_New (ARDISCOVERY_Connection_SendJsonCallback, ARDISCOVERY_Connection_ReceiveJsonCallback, this, &err);
+    if (discoveryData == NULL || err != ARDISCOVERY_OK)
+    {
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Error while creating discoveryData : %s", ARDISCOVERY_Error_ToString(err));
+        failed = true;
+    }
+
+    if (!failed)
+    {
+        eARDISCOVERY_ERROR err = ARDISCOVERY_Connection_ControllerConnection(discoveryData, _discoveryPort, _ip.c_str());
+        if (err != ARDISCOVERY_OK)
+        {
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Error while opening discovery connection : %s", ARDISCOVERY_Error_ToString(err));
+            failed = true;
+        }
+    }
+
+    ARDISCOVERY_Connection_Delete(&discoveryData);
+
+    return failed;
+}
+eARDISCOVERY_ERROR Drone::ARDISCOVERY_Connection_SendJsonCallback (uint8_t *dataTx, uint32_t *dataTxSize, void *drone)
+{
+    Drone* self = (Drone*) drone;
+    eARDISCOVERY_ERROR err = ARDISCOVERY_OK;
+
+    if ((dataTx != NULL) && (dataTxSize != NULL))
+    {
+        *dataTxSize = sprintf((char *)dataTx, "{ \"%s\": %d,\n \"%s\": \"%s\",\n \"%s\": \"%s\",\n \"%s\": %d,\n \"%s\": %d }",
+                              ARDISCOVERY_CONNECTION_JSON_D2CPORT_KEY, self->_d2cPort,
+                              ARDISCOVERY_CONNECTION_JSON_CONTROLLER_NAME_KEY, "BebopDroneStartStream",
+                              ARDISCOVERY_CONNECTION_JSON_CONTROLLER_TYPE_KEY, "Unix",
+                              ARDISCOVERY_CONNECTION_JSON_ARSTREAM2_CLIENT_STREAM_PORT_KEY, BD_CLIENT_STREAM_PORT,
+                              ARDISCOVERY_CONNECTION_JSON_ARSTREAM2_CLIENT_CONTROL_PORT_KEY, BD_CLIENT_CONTROL_PORT) + 1;
+    }
+    else
+    {
+        err = ARDISCOVERY_ERROR;
+    }
+
+    return err;
+}
+
+eARDISCOVERY_ERROR Drone::ARDISCOVERY_Connection_ReceiveJsonCallback (uint8_t *dataRx, uint32_t dataRxSize, char *ip, void *drone)
+{
+    Drone* self = (Drone*) drone;
+    eARDISCOVERY_ERROR err = ARDISCOVERY_OK;
+
+    if ((dataRx != NULL) && (dataRxSize != 0))
+    {
+        char *json = (char*) malloc(dataRxSize + 1);
+        strncpy(json, (char *)dataRx, dataRxSize);
+        json[dataRxSize] = '\0';
+
+        //read c2dPort ...
+
+        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "    - ReceiveJson:%s ", json);
+
+        free(json);
+    }
+    else
+    {
+        err = ARDISCOVERY_ERROR;
+    }
+
+    return err;
+}
+/*
+bool Drone::startNetwork ()
+{
+    bool failed = false;
+    eARNETWORK_ERROR netError = ARNETWORK_OK;
+    eARNETWORKAL_ERROR netAlError = ARNETWORKAL_OK;
+    int pingDelay = 0; // 0 means default, -1 means no ping
+
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- Start ARNetwork");
+
+    // Create the ARNetworkALManager
+    _alManager = ARNETWORKAL_Manager_New(&netAlError);
+    if (netAlError != ARNETWORKAL_OK)
+    {
+        failed = true;
+    }
+
+    if (!failed)
+    {
+        // Initilize the ARNetworkALManager
+        netAlError = ARNETWORKAL_Manager_InitWifiNetwork(_alManager, _ip.c_str(), _c2dPort, _d2cPort, 1);
+        if (netAlError != ARNETWORKAL_OK)
+        {
+            failed = true;
+        }
+    }
+
+    if (!failed)
+    {
+        // Create the ARNetworkManager.
+        _netManager = ARNETWORK_Manager_New(_alManager, numC2dParams, c2dParams, numD2cParams, d2cParams, pingDelay, onDisconnectNetwork, NULL, &netError);
+        if (netError != ARNETWORK_OK)
+        {
+            failed = true;
+        }
+    }
+
+    if (!failed)
+    {
+        // Create and start Tx and Rx threads.
+        if (ARSAL_Thread_Create(&(_rxThread), ARNETWORK_Manager_ReceivingThreadRun, _netManager) != 0)
+        {
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Creation of Rx thread failed.");
+            failed = true;
+        }
+
+        if (ARSAL_Thread_Create(&(_txThread), ARNETWORK_Manager_SendingThreadRun, _netManager) != 0)
+        {
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Creation of Tx thread failed.");
+            failed = true;
+        }
+    }
+
+    // Print net error
+    if (failed)
+    {
+        if (netAlError != ARNETWORKAL_OK)
+        {
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "ARNetWorkAL Error : %s", ARNETWORKAL_Error_ToString(netAlError));
+        }
+
+        if (netError != ARNETWORK_OK)
+        {
+            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "ARNetWork Error : %s", ARNETWORK_Error_ToString(netError));
+        }
+    }
+
+    return failed;
+}
+void Drone::stopNetwork()
+{
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- Stop ARNetwork");
+
+    // ARNetwork cleanup
+    if (_netManager != NULL)
+    {
+        ARNETWORK_Manager_Stop(_netManager);
+        if (_rxThread != NULL)
+        {
+            ARSAL_Thread_Join(_rxThread, NULL);
+            ARSAL_Thread_Destroy(&(_rxThread));
+            _rxThread = NULL;
+        }
+
+        if (_txThread != NULL)
+        {
+            ARSAL_Thread_Join(_txThread, NULL);
+            ARSAL_Thread_Destroy(&(_txThread));
+            _txThread = NULL;
+        }
+    }
+
+    if (_alManager != NULL)
+    {
+        ARNETWORKAL_Manager_Unlock(_alManager);
+
+        ARNETWORKAL_Manager_CloseWifiNetwork(_alManager);
+    }
+
+    ARNETWORK_Manager_Delete(&(_netManager));
+    ARNETWORKAL_Manager_Delete(&(_alManager));
+}
+void Drone::onDisconnectNetwork(ARNETWORK_Manager_t *manager, ARNETWORKAL_Manager_t *alManager, void *drone)
+{
+    Drone* self = (Drone*) drone;
+    ARSAL_PRINT(ARSAL_PRINT_DEBUG, TAG, "onDisconnectNetwork ...");
+}
+
+eARNETWORK_MANAGER_CALLBACK_RETURN Drone::arnetworkCmdCallback(int buffer_id, uint8_t *data, void *drone, eARNETWORK_MANAGER_CALLBACK_STATUS cause)
+{
+    std::cout << "coucou" << std::endl;
+
+    Drone* self = (Drone*) drone;
+
+    eARNETWORK_MANAGER_CALLBACK_RETURN retval = ARNETWORK_MANAGER_CALLBACK_RETURN_DEFAULT;
+
+    ARSAL_PRINT(ARSAL_PRINT_DEBUG, TAG, "    - arnetworkCmdCallback %d, cause:%d ", buffer_id, cause);
+
+    if (cause == ARNETWORK_MANAGER_CALLBACK_STATUS_TIMEOUT)
+    {
+        retval = ARNETWORK_MANAGER_CALLBACK_RETURN_DATA_POP;
+    }
+
+    return retval;
+}
+*/
+
+eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame, void *drone)
+{
+    Drone* self = (Drone*) drone;
+
+    //uint8_t data
+
+    //ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "GOT A FRAME");
+/*
+    cv::Mat picture = cv::imdecode(std::vector<uint8_t>(frame->data, frame->data + frame->used), CV_LOAD_IMAGE_COLOR);
+    //cv::Mat picture(856, 480, CV_8U, frame->data);
+
+    if(picture.data != NULL) {
+        std::cout << "OK " << picture.rows << " " << picture.cols << ":" << picture.data << std::endl;
+        cv::imshow("MDR", picture);
+    }else{
+        std::cout << "KO " << picture.rows << " " << picture.cols << ":" << picture.data << std::endl;
+    }
+    */
+    if (self->videoOut != NULL)
+    {
+        if (frame != NULL)
+        {
+            //TODO detect if user requested camera ?
+            if (true)
+            {
+                fwrite(frame->data, frame->used, 1, self->videoOut);
+
+                fflush (self->videoOut);
+            }
+        }
+        else
+        {
+            ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "frame is NULL.");
+        }
+    }
+    else
+    {
+        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "videoOut is NULL.");
+    }
+
+    return ARCONTROLLER_OK;
+}
+
+std::string Drone::getVideoPath() {
+    return _fifo_name;
+}
