@@ -521,6 +521,9 @@ void Drone::cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * element
  * @param customData
  * @return
  */
+char* CODECBUFFER;
+int CODEBUFFERLEN;
+
 eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *drone)
 {
     ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "DECODE CONFIG");
@@ -532,6 +535,12 @@ eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t co
             //TODO FIND OUT IF DECODING IS NEEDED
             if (true)
             {
+                CODEBUFFERLEN = codec.parameters.h264parameters.spsSize+codec.parameters.h264parameters.ppsSize;
+                CODECBUFFER = (char*) malloc(sizeof(char) * CODEBUFFERLEN);
+
+                memcpy(CODECBUFFER, codec.parameters.h264parameters.spsBuffer, codec.parameters.h264parameters.spsSize);
+                memcpy(CODECBUFFER + codec.parameters.h264parameters.spsSize, codec.parameters.h264parameters.ppsBuffer, codec.parameters.h264parameters.ppsSize);
+
                 fwrite(codec.parameters.h264parameters.spsBuffer, codec.parameters.h264parameters.spsSize, 1, d->videoOut);
                 fwrite(codec.parameters.h264parameters.ppsBuffer, codec.parameters.h264parameters.ppsSize, 1, d->videoOut);
 
@@ -759,16 +768,22 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
 
     //ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "GOT A FRAME");
 /*
-    cv::Mat picture = cv::imdecode(std::vector<uint8_t>(frame->data, frame->data + frame->used), CV_LOAD_IMAGE_COLOR);
+    uint8_t* pxls = (uint8_t*) malloc(sizeof(uint8_t) * (frame->used + CODEBUFFERLEN));
+    memcpy(pxls, CODECBUFFER, CODEBUFFERLEN);
+    memcpy(pxls + CODEBUFFERLEN, frame->data,  frame->used);
+
+    cv::Mat picture = cv::imdecode(std::vector<uint8_t>(pxls, pxls + frame->used + CODEBUFFERLEN), CV_LOAD_IMAGE_COLOR);
     //cv::Mat picture(856, 480, CV_8U, frame->data);
 
     if(picture.data != NULL) {
+        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "YATA");
         std::cout << "OK " << picture.rows << " " << picture.cols << ":" << picture.data << std::endl;
         cv::imshow("MDR", picture);
     }else{
         std::cout << "KO " << picture.rows << " " << picture.cols << ":" << picture.data << std::endl;
     }
-    */
+*/
+    /**/
     if (self->videoOut != NULL)
     {
         if (frame != NULL)
@@ -790,7 +805,7 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
     {
         ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "videoOut is NULL.");
     }
-
+/**/
     return ARCONTROLLER_OK;
 }
 

@@ -15,13 +15,8 @@ int main(){
     while(!d.isRunning()){
         sleep(1);
     }
-/*
-    assert(d.takeOff());
 
-    sleep(1);
 
-    assert(d.emergency());
-*/
 
     assert(d.startStreamingME());
 
@@ -38,12 +33,31 @@ int main(){
     while(!cap.isOpened()){
         cap = cv::VideoCapture(d.getVideoPath());
     }
+/*
 
+    assert(d.takeOff());
+
+    sleep(1);
+
+    assert(d.emergency());
+*/
+    cv::Mat tmp;
+    cv::Mat frame;
     while(true)
     {
-        cv::Mat frame;
-        cap >> frame;
-        if(frame.data != NULL){
+        cap >> tmp;
+        if(tmp.data != NULL) {
+            /**
+             * getting the last image
+             */
+            while (1) {
+                if(tmp.data != NULL) {
+                    tmp.copyTo(frame);
+                }else{
+                    break;
+                }
+                cap >> tmp;
+            }
             cv::imshow("frame", frame);
         }
 
