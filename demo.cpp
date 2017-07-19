@@ -3,9 +3,22 @@
 
 #include "streaming.h"
 
+
+int interval(int value, int min, int max){
+    if( min < value) {
+        if( value < max){
+            return value;
+        }else{
+            return max;
+        }
+    }else{
+        return min;
+    }
+}
+
 int main(){
 
-    cv::Point3d wishedPosition(0, -20, 700);
+    cv::Point3d wishedPosition(0, -20, 1500);
 
     Drone d;
 
@@ -21,7 +34,9 @@ int main(){
 
     std::cout << "EVERYTHING IS OK" << std::endl;
 
-    //d.takeOff();
+
+    d.takeOff();
+    //d.land();
 /*
     assert(d.takeOff());
 
@@ -48,7 +63,7 @@ int main(){
     }
 
     /**
-     * UGLY CP FROM CPOS                            **********************************
+     * UGLY CP FROM CPOS ***********************************************************************************************
      */
 
 
@@ -110,7 +125,7 @@ int main(){
     bool first_time = true;
     cv::Mat rvec, tvec;
     /**
-     *                                              **********************************
+     * *****************************************************************************************************************
      */
     cv::Point3d distFromWished(0,0,0);
     cv::Point3d dist(0,0,0);
@@ -181,9 +196,13 @@ int main(){
 
                 cv::putText(frame, std::to_string(d.getBatteryLvl()), cv::Point(800,30), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(255,0,255), 3, 8);
 
-                int8_t askedRoll = (int8_t)((int)distFromWished.x/10);
-                int8_t askedPitch = (int8_t)((int)distFromWished.z/10);
-                int8_t askedAlt = (int8_t)((int)distFromWished.y/10);
+                int askedRoll = (int)(distFromWished.x/30);
+                int askedPitch = (int)(distFromWished.z/30);
+                int askedAlt = (int)(distFromWished.y/50);
+
+                askedRoll = interval(askedRoll, -10, 10);
+                askedAlt = interval(askedAlt, -10, 10);
+                askedPitch = interval(askedPitch, -10, 10);
 
                 cv::putText(frame, "Asked roll", cv::Point(100,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
                 cv::putText(frame, "Asked altit", cv::Point(100,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
@@ -193,13 +212,18 @@ int main(){
                 cv::putText(frame, std::to_string(askedAlt), cv::Point(300,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,255,0), 2, 8);
                 cv::putText(frame, std::to_string(askedPitch), cv::Point(300,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 2, 8);
 
-                //d.modifyRoll(askedRoll);
-                //d.modifyAltitude(askedAlt);
-                //d.modifyPitch(askedPitch);
+                d.modifyRoll(askedRoll);
+                d.modifyAltitude(askedAlt);
+                d.modifyPitch(askedPitch);
 
                 first_time = false;
             }else{
                 cv::putText(frame, "STOP EVERYTHIG, NO CHESSBOARD !", cv::Point(10,300), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 3, 8);
+
+                d.modifyRoll(0);
+                d.modifyAltitude(0);
+                d.modifyPitch(0);
+
                 first_time = true;
             }
             /**
