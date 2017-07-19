@@ -21,6 +21,7 @@ int main(){
 
     std::cout << "EVERYTHING IS OK" << std::endl;
 
+    //d.takeOff();
 /*
     assert(d.takeOff());
 
@@ -180,9 +181,9 @@ int main(){
 
                 cv::putText(frame, std::to_string(d.getBatteryLvl()), cv::Point(800,30), cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(255,0,255), 3, 8);
 
-                int askedRoll = ((int)distFromWished.x/10);
-                int askedPitch = ((int)distFromWished.z/10);
-                int askedAlt = ((int)distFromWished.y/10);
+                int8_t askedRoll = (int8_t)((int)distFromWished.x/10);
+                int8_t askedPitch = (int8_t)((int)distFromWished.z/10);
+                int8_t askedAlt = (int8_t)((int)distFromWished.y/10);
 
                 cv::putText(frame, "Asked roll", cv::Point(100,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
                 cv::putText(frame, "Asked altit", cv::Point(100,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
@@ -191,6 +192,10 @@ int main(){
                 cv::putText(frame, std::to_string(askedRoll), cv::Point(300,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(255,0,0), 2, 8);
                 cv::putText(frame, std::to_string(askedAlt), cv::Point(300,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,255,0), 2, 8);
                 cv::putText(frame, std::to_string(askedPitch), cv::Point(300,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 2, 8);
+
+                //d.modifyRoll(askedRoll);
+                //d.modifyAltitude(askedAlt);
+                //d.modifyPitch(askedPitch);
 
                 first_time = false;
             }else{
