@@ -128,6 +128,16 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
         }
     }
 
+    if(!failed){
+        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- set arcommands decoder ... ");
+        eARCOMMANDS_DECODER_ERROR decError = ARCOMMANDS_DECODER_OK;
+        _commandsDecoder = ARCOMMANDS_Decoder_NewDecoder(&decError);
+
+        //ARCOMMANDS_Decoder_SetARDrone3PilotingStateSpeedChangedCb(_deviceController.)
+    }
+
+
+
     // add the frame received callback to be informed when a streaming frame has been received from the device
     if (!failed)
     {
@@ -203,6 +213,12 @@ bool Drone::connect()
     bool res = _isValid and _isConnected and !isStopped();
     return res;
 }
+/// GETTERS
+
+int Drone::getBatteryLvl() {
+    return _batteryLvl;
+}
+
 
 /// COMMANDS
 bool Drone::takeOff() {
@@ -492,9 +508,7 @@ void Drone::cmdBatteryStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *element
         ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "arg is NULL");
         return;
     }
-
-    // update UI
-    std::cout << "New battery lvl " << (int)(arg->value.U8) << std::endl;
+    _batteryLvl.store((int)(arg->value.U8));
 }
 
 void Drone::cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * elementDictionary)

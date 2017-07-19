@@ -47,6 +47,7 @@ public:
     bool isStreaming();
     bool errorStream();
 
+    int getBatteryLvl();
     /// COMMANDS
     bool takeOff();
     bool land();
@@ -121,6 +122,7 @@ private:
     int _discoveryPort;
     std::atomic<bool> _isConnected;
     std::atomic<bool> _isValid;
+    std::atomic<int> _batteryLvl;
 
     char _fifo_dir[sizeof(FIFO_DIR_PATTERN)] = FIFO_DIR_PATTERN;
     char _fifo_name[128] = "";
@@ -129,6 +131,7 @@ private:
     int frameNb = 0;
     ARSAL_Sem_t _stateSem;
     ARCONTROLLER_Device_t *_deviceController;
+    ARCOMMANDS_Decoder_t *_commandsDecoder;
 
     /// Video
     int _d2cPort;
