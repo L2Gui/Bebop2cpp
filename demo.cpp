@@ -35,7 +35,7 @@ int main(){
     std::cout << "EVERYTHING IS OK" << std::endl;
 
 
-    d.takeOff();
+    //d.takeOff();
     //d.land();
 /*
     assert(d.takeOff());

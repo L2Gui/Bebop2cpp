@@ -373,6 +373,9 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
     if (d->_deviceController == NULL)
         return;
 
+    if(elementDictionary == NULL)
+        return;
+
     // if the command received is a battery state changed
     switch(commandKey) {
         case ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_BATTERYSTATECHANGED:
@@ -386,6 +389,15 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             break;
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED:
             d->cmdStreamingStateChangedRcv(elementDictionary);
+            break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED:
+            d->cmdPositionChangedRcv(elementDictionary);
+            break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_SPEEDCHANGED:
+            d->cmdSpeedChangedRcv(elementDictionary);
+            break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED:
+            d->cmdAttitudeChangedRcv(elementDictionary);
             break;
         default:
             break;
@@ -529,6 +541,82 @@ void Drone::cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * element
         }
     }
 }
+
+void Drone::cmdPositionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED_LATITUDE, arg);
+        if (arg != NULL)
+        {
+            _latitude.store(arg->value.Double);
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED_LONGITUDE, arg);
+        if (arg != NULL)
+        {
+            _longitude.store(arg->value.Double);
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED_ALTITUDE, arg);
+        if (arg != NULL)
+        {
+            _altitude.store(arg->value.Double);
+            std::cout << "ALTITUDE " << arg->value.Double << std::endl;
+        }
+    }
+}
+void Drone::cmdSpeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_SPEEDCHANGED_SPEEDX, arg);
+        if (arg != NULL)
+        {
+            _speedX.store(arg->value.Float);
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_SPEEDCHANGED_SPEEDY, arg);
+        if (arg != NULL)
+        {
+            _speedY.store(arg->value.Float);
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_SPEEDCHANGED_SPEEDZ, arg);
+        if (arg != NULL)
+        {
+            _speedZ.store(arg->value.Float);
+        }
+    }
+}
+
+void Drone::cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_ROLL, arg);
+        if (arg != NULL)
+        {
+            _roll.store(arg->value.Float);
+            //std::cout << "roll " << arg->value.Float << std::endl;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_PITCH, arg);
+        if (arg != NULL)
+        {
+            _pitch.store(arg->value.Float);
+            //std::cout << "pitch " << arg->value.Float << std::endl;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_YAW, arg);
+        if (arg != NULL)
+        {
+            _yaw.store(arg->value.Float);
+            //std::cout << "yaw " << arg->value.Float << std::endl;
+        }
+    }
+}
+
 /**
  * STATIC
  * @param codec

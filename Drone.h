@@ -7,6 +7,7 @@ extern "C" {
 #include <libARDiscovery/ARDiscovery.h>
 #include <libARNetwork/ARNetwork.h>
 #include <libARController/ARCONTROLLER_Frame.h>
+#include <libARController/ARCONTROLLER_Dictionary.h>
 }
 
 #include <atomic>
@@ -98,6 +99,9 @@ protected:
     void cmdBatteryStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
     void cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * elementDictionary);
     void cmdStreamingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+    void cmdPositionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDictionary);
+    void cmdSpeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDictionary);
+    void cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
 
     static eARCONTROLLER_ERROR decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *customData);
 
@@ -123,6 +127,18 @@ private:
     std::atomic<bool> _isConnected;
     std::atomic<bool> _isValid;
     std::atomic<int> _batteryLvl;
+
+    std::atomic<float> _speedX;
+    std::atomic<float> _speedY;
+    std::atomic<float> _speedZ;
+
+    std::atomic<double> _latitude;
+    std::atomic<double> _longitude;
+    std::atomic<double> _altitude;
+
+    std::atomic<float> _roll;
+    std::atomic<float> _pitch;
+    std::atomic<float> _yaw;
 
     char _fifo_dir[sizeof(FIFO_DIR_PATTERN)] = FIFO_DIR_PATTERN;
     char _fifo_name[128] = "";
