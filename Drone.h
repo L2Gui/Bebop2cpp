@@ -228,7 +228,7 @@ protected:
     void cmdPositionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDictionary);
     void cmdSpeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDictionary);
     void cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
-
+    void cmdMagnetoCalibrationNeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
     /// ********************************************************************************************* DIRTY CAMERA STUFF
     static eARCONTROLLER_ERROR decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *customData);
     static eARCONTROLLER_ERROR didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame, void *customData);

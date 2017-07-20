@@ -59,6 +59,7 @@ int main(){
 
     cv::VideoCapture cap(d.getVideoPath());
     while(!cap.isOpened()){
+        sleep(1);
         cap = cv::VideoCapture(d.getVideoPath());
     }
 
@@ -82,9 +83,9 @@ int main(){
     fs["square_size"] >> square_size;
     fs.release();
 
-    std::cout << camMatrix << std::endl << std::endl;
-    std::cout << distCoeff << std::endl << std::endl;
-    std::cout << square_size << std::endl << std::endl;
+    //std::cout << camMatrix << std::endl << std::endl;
+    //std::cout << distCoeff << std::endl << std::endl;
+    //std::cout << square_size << std::endl << std::endl;
 
     int chess_x = 9;
     int chess_y = 6;
@@ -105,7 +106,7 @@ int main(){
         }
     }
 
-    std::cout << model_pts << std::endl;
+    //std::cout << model_pts << std::endl;
     /*
     std::vector<cv::Point3d> model_pts;
     for(int x = -(ref_pt%chess_x); x < chess_x - ref_pt%chess_x; ++x){

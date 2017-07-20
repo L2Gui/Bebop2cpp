@@ -467,6 +467,9 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED:
             d->cmdAttitudeChangedRcv(elementDictionary);
             break;
+        case ARCONTROLLER_DICTIONARY_KEY_COMMON_CALIBRATIONSTATE_MAGNETOCALIBRATIONREQUIREDSTATE:
+            d->cmdMagnetoCalibrationNeedChangedRcv(elementDictionary);
+            break;
         default:
             break;
     }
@@ -508,16 +511,11 @@ void Drone::cmdSensorStateListChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elem
     eARCOMMANDS_COMMON_COMMONSTATE_SENSORSSTATESLISTCHANGED_SENSORNAME sensorName = ARCOMMANDS_COMMON_COMMONSTATE_SENSORSSTATESLISTCHANGED_SENSORNAME_MAX;
     int sensorState = 0;
 
-    if (elementDictionary == NULL) {
-        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "elements is NULL");
-        return;
-    }
-
     // get the command received in the device controller
     HASH_ITER(hh, elementDictionary, dictElement, dictTmp) {
         // get the Name
         HASH_FIND_STR (dictElement->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_SENSORSSTATESLISTCHANGED_SENSORNAME, arg);
-        if (arg != NULL) {
+        if (arg == NULL) {
             ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "arg sensorName is NULL");
             continue;
         }
@@ -622,12 +620,13 @@ void Drone::cmdPositionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDict
         if (arg != NULL)
         {
             _longitude.store(arg->value.Double);
+            //std::cout << "LONGITUDE " << arg->value.Double << std::endl;
         }
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_POSITIONCHANGED_ALTITUDE, arg);
         if (arg != NULL)
         {
             _altitude.store(arg->value.Double);
-            std::cout << "ALTITUDE " << arg->value.Double << std::endl;
+            //std::cout << "ALTITUDE " << arg->value.Double << std::endl;
         }
     }
 }
@@ -641,6 +640,7 @@ void Drone::cmdSpeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDiction
         if (arg != NULL)
         {
             _speedX.store(arg->value.Float);
+            //std::cout << "SPEED X " << arg->value.Double << std::endl;
         }
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_SPEEDCHANGED_SPEEDY, arg);
         if (arg != NULL)
@@ -682,6 +682,24 @@ void Drone::cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDict
     }
 }
 
+void Drone::cmdMagnetoCalibrationNeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CALIBRATIONSTATE_MAGNETOCALIBRATIONREQUIREDSTATE_REQUIRED, arg);
+        if (arg != NULL)
+        {
+            uint8_t required = arg->value.U8;
+            if(required == 1){
+                ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Calibration IS REQUIRED !");
+            }else{
+                ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Calibration is not required !");
+            }
+        }
+    }
+}
 char* CODECBUFFER;
 int CODEBUFFERLEN;
 
