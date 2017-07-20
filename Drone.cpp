@@ -7,10 +7,6 @@
 
 #include "Drone.h"
 
-/**
- * Some implementation
- */
-/* removed **/
 
 /**
  * Some more define to clean out
@@ -37,16 +33,16 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
     eARCONTROLLER_ERROR error = ARCONTROLLER_OK;
 
 
-    if (mkdtemp(_fifo_dir) == NULL)
+    if (mkdtemp(_file_dir_name) == NULL)
     {
         ARSAL_PRINT(ARSAL_PRINT_ERROR, "ERROR", "Mkdtemp failed.");
         _isValid = false;
         return;
     }
-    snprintf(_fifo_name, sizeof(_fifo_name), "%s/%s", _fifo_dir, FIFO_NAME);
+    snprintf(_file_name, sizeof(_file_name), "%s/%s", _file_dir_name, FIFO_NAME);
 
-    videoOut = fopen(_fifo_name, "wb+");
-    if(videoOut == NULL)
+    _videoOut = fopen(_file_name, "wb+");
+    if(_videoOut == NULL)
     {
         ARSAL_PRINT(ARSAL_PRINT_ERROR, "ERROR", "Mkfifo failed: %d, %s", errno, strerror(errno));
         _isValid = false;
@@ -77,7 +73,12 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
     device = ARDISCOVERY_Device_New (&errorDiscovery);
     if (errorDiscovery == ARDISCOVERY_OK) {
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "    - ARDISCOVERY_Device_InitWifi ...");
-        errorDiscovery = ARDISCOVERY_Device_InitWifi (device, ARDISCOVERY_PRODUCT_BEBOP_2, "bebop2", _ip.c_str(), discoveryPort);
+        errorDiscovery = ARDISCOVERY_Device_InitWifi (device,
+                                                      ARDISCOVERY_PRODUCT_BEBOP_2,
+                                                      "bebop2",
+                                                      _ip.c_str(),
+                                                      discoveryPort
+        );
 
         if (errorDiscovery != ARDISCOVERY_OK)
         {
@@ -142,7 +143,12 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
     if (!failed)
     {
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- set Video callback ... ");
-        error = ARCONTROLLER_Device_SetVideoStreamCallbacks (_deviceController, decoderConfigCallback, didReceiveFrameCallback, NULL , this);
+        error = ARCONTROLLER_Device_SetVideoStreamCallbacks (_deviceController,
+                                                             decoderConfigCallback,
+                                                             didReceiveFrameCallback,
+                                                             NULL,
+                                                             this
+        );
 
         if (error != ARCONTROLLER_OK)
         {
@@ -173,8 +179,8 @@ Drone::~Drone() {
 
         ARSAL_Sem_Destroy (&(_stateSem));
 
-        unlink(_fifo_name);
-        rmdir(_fifo_dir);
+        unlink(_file_name);
+        rmdir(_file_dir_name);
 
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Drone successfully destroyed");
     }
@@ -229,12 +235,42 @@ bool Drone::takeOff() {
     }
     return error == ARCONTROLLER_OK;
 }
+
+bool Drone::blockingTakeOff(){
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingTakeOff(_deviceController->aRDrone3);
+
+    if(error != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending takeoff command");
+    }
+    if(error == ARCONTROLLER_OK){
+        while(
+                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING) &&
+                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING));
+        return true;
+    }
+    return false;
+
+}
 bool Drone::land(){
     eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingLanding(_deviceController->aRDrone3);
     if(error != ARCONTROLLER_OK){
         ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending land command");
     }
     return error == ARCONTROLLER_OK;
+}
+
+bool Drone::blockingLand(){
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingLanding(_deviceController->aRDrone3);
+    if(error != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending land command");
+    }
+    if(error == ARCONTROLLER_OK){
+        while(
+                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED) &&
+                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_EMERGENCY_LANDING));
+        return true;
+    }
+    return false;
 }
 bool Drone::emergency(){
     eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingEmergency(_deviceController->aRDrone3);
@@ -284,18 +320,38 @@ bool Drone::modifyRoll(int8_t value){
     return error1 == ARCONTROLLER_OK and error2 == ARCONTROLLER_OK;
 }
 
+bool Drone::moveBy(float dX, float dY, float dZ, float dPsi){
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingMoveBy(
+            _deviceController->aRDrone3,
+            dX,
+            dY,
+            dZ,
+            dPsi
+    );
+    if(error != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending sendPilotingMoveBy command with %f, %f, %f, %f",
+                    dX,
+                    dY,
+                    dZ,
+                    dPsi
+        );
+    }
+    return error == ARCONTROLLER_OK;
+}
 
-bool Drone::startStreamingME() {
-/*
-    cv::VideoCapture cv(_fifo_name);
 
-    videoOut = fopen(_fifo_name, "w");
-    if(videoOut == NULL)
-        return false;
-*/
+bool Drone::startStreaming() {
     _deviceController->aRDrone3->sendMediaStreamingVideoEnable(_deviceController->aRDrone3, 1);
 
-    while(!isStreaming());
+    while(!isStreaming() && !errorStream());
+    return !errorStream();
+}
+
+bool Drone::stopStreaming() {
+    _deviceController->aRDrone3->sendMediaStreamingVideoEnable(_deviceController->aRDrone3, 0);
+
+    while(isStreaming() && !errorStream());
+
     return !errorStream();
 }
 
@@ -351,12 +407,24 @@ bool Drone::isPaused(){
 bool Drone::isStopping(){
     return _deviceState == ARCONTROLLER_DEVICE_STATE_STOPPING;
 }
+
+bool Drone::isFlying(){
+    return _flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING;
+}
+bool Drone::isHovering(){
+    return _flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING;
+}
+bool Drone::isLanded(){
+    return _flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED;
+}
+
 bool Drone::errorStream() {
     return _streamingState == ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ERROR;
 }
 bool Drone::isStreaming() {
     return  _streamingState == ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ENABLED;
 }
+
 
 /// PROTECTED
 /**
@@ -404,12 +472,6 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
     }
 }
 
-/**
- * STATIC
- * @param newState
- * @param error
- * @param drone (void*)(Drone d)
- */
 void Drone::stateChanged (eARCONTROLLER_DEVICE_STATE newState,
                           eARCONTROLLER_ERROR error,
                           void *drone)
@@ -533,7 +595,10 @@ void Drone::cmdFlyingStateChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t * element
     if (element != NULL)
     {
         // get the value
-        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE, arg);
+        HASH_FIND_STR (element->arguments,
+                       ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE,
+                       arg
+        );
 
         if (arg != NULL)
         {
@@ -617,12 +682,6 @@ void Drone::cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDict
     }
 }
 
-/**
- * STATIC
- * @param codec
- * @param customData
- * @return
- */
 char* CODECBUFFER;
 int CODEBUFFERLEN;
 
@@ -630,7 +689,7 @@ eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t co
 {
     ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "DECODE CONFIG");
     Drone* d = (Drone*)drone;
-    if (d->videoOut != NULL)
+    if (d->_videoOut != NULL)
     {
         if (codec.type == ARCONTROLLER_STREAM_CODEC_TYPE_H264)
         {
@@ -643,17 +702,17 @@ eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t co
                 memcpy(CODECBUFFER, codec.parameters.h264parameters.spsBuffer, codec.parameters.h264parameters.spsSize);
                 memcpy(CODECBUFFER + codec.parameters.h264parameters.spsSize, codec.parameters.h264parameters.ppsBuffer, codec.parameters.h264parameters.ppsSize);
 
-                fwrite(codec.parameters.h264parameters.spsBuffer, codec.parameters.h264parameters.spsSize, 1, d->videoOut);
-                fwrite(codec.parameters.h264parameters.ppsBuffer, codec.parameters.h264parameters.ppsSize, 1, d->videoOut);
+                fwrite(codec.parameters.h264parameters.spsBuffer, codec.parameters.h264parameters.spsSize, 1, d->_videoOut);
+                fwrite(codec.parameters.h264parameters.ppsBuffer, codec.parameters.h264parameters.ppsSize, 1, d->_videoOut);
 
-                fflush (d->videoOut);
+                fflush (d->_videoOut);
             }
         }
 
     }
     else
     {
-        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "videoOut is NULL !!!!!! 605.");
+        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "_videoOut is NULL !!!!!! 605.");
     }
 
     return ARCONTROLLER_OK;
@@ -711,7 +770,10 @@ eARDISCOVERY_ERROR Drone::ARDISCOVERY_Connection_SendJsonCallback (uint8_t *data
     return err;
 }
 
-eARDISCOVERY_ERROR Drone::ARDISCOVERY_Connection_ReceiveJsonCallback (uint8_t *dataRx, uint32_t dataRxSize, char *ip, void *drone)
+eARDISCOVERY_ERROR Drone::ARDISCOVERY_Connection_ReceiveJsonCallback (uint8_t *dataRx,
+                                                                      uint32_t dataRxSize,
+                                                                      char *ip,
+                                                                      void *drone)
 {
     Drone* self = (Drone*) drone;
     eARDISCOVERY_ERROR err = ARDISCOVERY_OK;
@@ -886,16 +948,16 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
     }
 */
     /**/
-    if (self->videoOut != NULL)
+    if (self->_videoOut != NULL)
     {
         if (frame != NULL)
         {
             //TODO detect if user requested camera ?
             if (true)
             {
-                fwrite(frame->data, frame->used, 1, self->videoOut);
+                fwrite(frame->data, frame->used, 1, self->_videoOut);
 
-                fflush (self->videoOut);
+                fflush (self->_videoOut);
             }
         }
         else
@@ -905,12 +967,12 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
     }
     else
     {
-        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "videoOut is NULL.");
+        ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "_videoOut is NULL.");
     }
 /**/
     return ARCONTROLLER_OK;
 }
 
 std::string Drone::getVideoPath() {
-    return _fifo_name;
+    return _file_name;
 }

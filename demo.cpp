@@ -51,7 +51,7 @@ int main(){
     assert(d.land());
 */
 
-    assert(d.startStreamingME());
+    assert(d.startStreaming());
 
 /*
     initStream();
