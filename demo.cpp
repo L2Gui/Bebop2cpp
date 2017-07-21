@@ -27,7 +27,7 @@ float valueIfAboveEpsilon(float value, float epsilon){
 
 int main(){
 
-    cv::Point3d wishedPosition(0, -20, 1500);
+    cv::Point3d wishedPosition(0, -20, 500);
 
     Drone d;
 
@@ -212,9 +212,10 @@ int main(){
                                 1, cv::Scalar(0, 0, 255), 2, 8);
 
 
+                    // ASKED = DRONE AXIS
                     float askedDx = (float) (distFromWished.z / 1000);
-                    float askedDy = -(float) (distFromWished.y / 1000);
-                    float askedDz = -(float) (distFromWished.x / 1000);
+                    float askedDy = -(float) (distFromWished.x / 1000);
+                    float askedDz = -(float) (distFromWished.y / 1000);
 
                     askedDx = valueIfAboveEpsilon(askedDx, 0.01);
                     askedDy = valueIfAboveEpsilon(askedDy, 0.01);
