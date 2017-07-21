@@ -1,8 +1,6 @@
 #include <vector>
 #include "Drone.h"
 
-#include "streaming.h"
-
 
 int interval(int value, int min, int max){
     if( min < value) {
@@ -202,10 +200,6 @@ int main(){
                 cv::putText(frame, std::to_string((int)dist.y), cv::Point(10,130), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,255,0), 2, 8);
                 cv::putText(frame, std::to_string((int)dist.z), cv::Point(10,180), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 2, 8);
 
-
-                cv::putText(frame, std::to_string(d.getBatteryLvl()), cv::Point(800, 30),
-                            cv::FONT_HERSHEY_SCRIPT_SIMPLEX, 1, cv::Scalar(255, 0, 255), 3, 8);
-
                 if(FOLLOW) {
 
                     cv::putText(frame, "Dist from wished", cv::Point(10, 230), cv::QT_FONT_NORMAL, 1,
@@ -283,6 +277,10 @@ int main(){
             cv::putText(frame, help, cv::Point(10,465), cv::QT_FONT_NORMAL, 1, cv::Scalar(255,255,255), 2);
             cv::putText(frame, help, cv::Point(10,465), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 1);
 
+            cv::putText(frame, std::to_string(d.getBatteryLvl()), cv::Point(800, 30),
+                        cv::QT_FONT_NORMAL, 1, cv::Scalar(255, 0, 255), 3, 8);
+
+
             cv::imshow("frame", frame);
         }
         char k = (char)cv::waitKey(10);
@@ -303,7 +301,7 @@ int main(){
         if(k == 't') {
             d.takeOff();
         }
-        
+
     }
 
     d.land();
