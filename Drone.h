@@ -8,6 +8,7 @@ extern "C" {
 #include <libARNetwork/ARNetwork.h>
 #include <libARController/ARCONTROLLER_Frame.h>
 #include <libARController/ARCONTROLLER_Dictionary.h>
+#include <libARController/ARCONTROLLER_Frame.h>
 }
 
 #include <atomic>
@@ -119,6 +120,58 @@ public:
     bool errorStream();
 
 
+    /// *************************************************************************************************** DRONE LIMITS
+
+    /**
+     * Set the max altitude the drone can reach
+     * @param value in meters
+     * @return true if the command was well sent, false otherwise
+     */
+    bool setMaxAltitude(float value);
+    /**
+     * Get the max altitude the drone can reach
+     * @return the value, in meters
+     */
+    float getMaxAltitude();
+
+
+    /**
+     * Set the max tilt value
+     * @param value in degrees
+     * @return true if the command was well sent, false otherwise
+     */
+    bool setMaxTilt(float value);
+    /**
+     * Get the max tilt value
+     * @return the value, in degrees
+     */
+    float getMaxTilt();
+
+    /**
+     * Set the max vertical speed
+     * @param value in m/s
+     * @return true if the command was well sent, false otherwise
+     */
+    bool setMaxVerticalSpeed(float value);
+    /**
+     * Get the max vertical speed value
+     * @return the value, in m/s
+     */
+    float getMaxVerticalSpeed();
+
+    /**
+     * Set the max rotation speed
+     * @param value in degrees/s
+     * @return true if the command was well sent, false otherwise
+     */
+    bool setMaxRotationSpeed(float value);
+    /**
+     * Get the max rotation speed value
+     * @return the value, in degrees/s
+     */
+    float getMaxRotationSpeed();
+
+
     /// ******************************************************************************************************* COMMANDS
     /**
      * Give to the drone the order to take off.
@@ -214,6 +267,14 @@ public:
      */
     std::string getVideoPath();
 
+    /**
+     * Execute a flat trim if the drone is in landed state.
+     * @warning the function is blocking, it will only return once the drone executed the flat trim of if the drone is
+     * not in landing state.
+     * @return true if a flat trim was successfully executed. False otherwise
+     */
+    bool blockingFlatTrim();
+
 protected:
     /// *********************************************************************************** RETRIEVE DATA FROM THE DRONE
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);
@@ -229,6 +290,12 @@ protected:
     void cmdSpeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDictionary);
     void cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
     void cmdMagnetoCalibrationNeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+    void cmdRelativeMovementChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+    void cmdVideoResolutionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+    void cmdFlatTreamChangedRcv();
+
     /// ********************************************************************************************* DIRTY CAMERA STUFF
     static eARCONTROLLER_ERROR decoderConfigCallback (ARCONTROLLER_Stream_Codec_t codec, void *customData);
     static eARCONTROLLER_ERROR didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame, void *customData);
@@ -273,6 +340,8 @@ private:
     std::atomic<float> _roll;
     std::atomic<float> _pitch;
     std::atomic<float> _yaw;
+
+    std::atomic<bool> _trimLock;
 
     int frameNb = 0;
     ARSAL_Sem_t _stateSem;

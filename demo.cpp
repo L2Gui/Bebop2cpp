@@ -27,7 +27,7 @@ float valueIfAboveEpsilon(float value, float epsilon){
 
 int main(){
 
-    cv::Point3d wishedPosition(0, -20, 500);
+    cv::Point3d wishedPosition(0, -50, 1000);
 
     Drone d;
 
@@ -40,6 +40,8 @@ int main(){
         sleep(1);
     }
 
+    assert(d.setMaxAltitude(1));
+
 
     std::cout << "INITIALISATION IS OK" << std::endl;
 
@@ -49,6 +51,23 @@ int main(){
 
     std::cout << "STREAMING IS OK" << std::endl;
 
+    if(d.blockingFlatTrim()) {
+        std::cout << "FLAT TRIM IS OK" << std::endl;
+
+    }else{
+        std::cerr << "FLAT TRIM NOT OK" << std::endl;
+    }
+/*
+    d.takeOff();
+    sleep(5);
+
+    d.moveBy(1, 0, 0, 0);
+    sleep(5);
+
+    d.land();
+
+    return 0;
+*/
     //d.takeOff();
     //d.land();
 /*
@@ -146,6 +165,12 @@ int main(){
     cv::Mat tmp;
     cv::Mat frame;
     bool FOLLOW = false;
+
+
+
+
+
+
     while(true)
     {
         cap >> tmp;
@@ -213,9 +238,9 @@ int main(){
 
 
                     // ASKED = DRONE AXIS
-                    float askedDx = (float) (distFromWished.z / 1000);
-                    float askedDy = -(float) (distFromWished.x / 1000);
-                    float askedDz = -(float) (distFromWished.y / 1000);
+                    float askedDx = (float) (distFromWished.z / 100);
+                    float askedDy = -(float) (distFromWished.x / 100);
+                    float askedDz = -(float) (distFromWished.y / 100);
 
                     askedDx = valueIfAboveEpsilon(askedDx, 0.01);
                     askedDy = valueIfAboveEpsilon(askedDy, 0.01);
@@ -235,37 +260,52 @@ int main(){
                     cv::putText(frame, std::to_string(askedDx), cv::Point(300, 380), cv::QT_FONT_NORMAL, 1,
                                 cv::Scalar(0, 0, 255), 2, 8);
 
-                    d.moveBy(askedDx, askedDy, askedDz, 0);
+                    d.moveBy(0, 0, askedDz, 0);
+
+
+/*
+                    int askedRoll = (int)(distFromWished.x/30);
+                    int askedPitch = (int)(distFromWished.z/30);
+                    int askedAlt = (int)(distFromWished.y/50);
+
+                    askedRoll = interval(askedRoll, -10, 10);
+                    askedAlt = interval(askedAlt, -10, 10);
+                    askedPitch = interval(askedPitch, -10, 10);
+
+                    cv::putText(frame, "Asked roll", cv::Point(100,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
+                    cv::putText(frame, "Asked altit", cv::Point(100,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
+                    cv::putText(frame, "Asked pitch", cv::Point(100,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
+
+                    cv::putText(frame, std::to_string(askedRoll), cv::Point(300,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(255,0,0), 2, 8);
+                    cv::putText(frame, std::to_string(askedAlt), cv::Point(300,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,255,0), 2, 8);
+                    cv::putText(frame, std::to_string(askedPitch), cv::Point(300,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 2, 8);
+
+                    //d.modifyRoll((int8_t) askedRoll);
+                    //d.modifyAltitude((int8_t) askedAlt);
+                    //d.modifyPitch((int8_t) askedPitch);
+                    */
                 }
-                /*
-                int askedRoll = (int)(distFromWished.x/30);
-                int askedPitch = (int)(distFromWished.z/30);
-                int askedAlt = (int)(distFromWished.y/50);
-
-                askedRoll = interval(askedRoll, -10, 10);
-                askedAlt = interval(askedAlt, -10, 10);
-                askedPitch = interval(askedPitch, -10, 10);
-
-                cv::putText(frame, "Asked roll", cv::Point(100,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
-                cv::putText(frame, "Asked altit", cv::Point(100,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
-                cv::putText(frame, "Asked pitch", cv::Point(100,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
-
-                cv::putText(frame, std::to_string(askedRoll), cv::Point(300,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(255,0,0), 2, 8);
-                cv::putText(frame, std::to_string(askedAlt), cv::Point(300,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,255,0), 2, 8);
-                cv::putText(frame, std::to_string(askedPitch), cv::Point(300,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 2, 8);
-
-                d.modifyRoll(askedRoll);
-                d.modifyAltitude(askedAlt);
-                d.modifyPitch(askedPitch);
-                */
 
                 first_time = false;
             }else{
                 cv::putText(frame, "STOP EVERYTHIG, NO CHESSBOARD !", cv::Point(10,300), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 3, 8);
 
-                d.modifyRoll(0);
-                d.modifyAltitude(0);
-                d.modifyPitch(0);
+
+
+
+
+
+
+
+                // TODO uncomment the things bellow
+
+
+
+
+
+                //d.modifyRoll(0);
+                //d.modifyAltitude(0);
+                //d.modifyPitch(0);
 
                 first_time = true;
             }
@@ -287,7 +327,7 @@ int main(){
         char k = (char)cv::waitKey(10);
 
         if(k == 'l') {
-            break;
+            d.land();
         }else
         if(k == 'q') {
             d.emergency();
@@ -296,11 +336,30 @@ int main(){
         if(k == 'f') {
             FOLLOW = !FOLLOW;
             if(!FOLLOW){
-                d.moveBy(0,0,0,0);
+                d.modifyRoll(0);
+                d.modifyPitch(0);
+                d.modifyAltitude(0);
+                assert(d.moveBy(0,0,0,0));
             }
         }else
         if(k == 't') {
             d.takeOff();
+        }else
+        if(k == 'm'){
+            std::cout << "move" << std::endl;
+            assert(d.moveBy(0, 0, 0, 0.79));
+            //d.modifyAltitude(-10);
+            // 1st down ?
+            // 2nd
+            // 3rd
+        }else
+        if(k == 's'){
+            std::cout << "STOP" << std::endl;
+            d.modifyYaw(0);
+            d.modifyRoll(0);
+            d.modifyPitch(0);
+            d.modifyAltitude(0);
+            assert(d.moveBy(0, 0, 0, 0));
         }
 
     }

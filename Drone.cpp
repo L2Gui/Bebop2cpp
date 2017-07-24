@@ -216,6 +216,19 @@ bool Drone::connect()
         }
     }
 
+    // desable autorecord
+    //_deviceController->aRDrone3->sendPictureSettingsVideoAutorecordSelection(_deviceController->aRDrone3, (uint8_t)0, (uint8_t)0);
+
+    // RESOLOUTION
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "-Setting video resulution to 480p...");
+    error = _deviceController->aRDrone3->sendPictureSettingsVideoResolutions(
+            _deviceController->aRDrone3,
+            ARCOMMANDS_ARDRONE3_PICTURESETTINGS_VIDEORESOLUTIONS_TYPE_REC1080_STREAM480
+    );
+
+    if(error != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error setting video resulution to 480p");
+    }
     bool res = _isValid and _isConnected and !isStopped();
     return res;
 }
@@ -355,6 +368,22 @@ bool Drone::stopStreaming() {
     return !errorStream();
 }
 
+bool Drone::blockingFlatTrim() {
+    if(isLanded()) {
+        _trimLock.store(true);
+        _deviceController->aRDrone3->sendPilotingFlatTrim(_deviceController->aRDrone3);
+        while (_trimLock);
+        return true;
+    }
+    return false;
+}
+
+bool Drone:: setMaxAltitude(float value){
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingSettingsMaxAltitude(_deviceController->aRDrone3, value);
+
+    return error == ARCONTROLLER_OK;
+}
+
 /*
 bool Drone::startStreamingEXPL()
 {
@@ -444,6 +473,30 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
     if(elementDictionary == NULL)
         return;
 
+    /***************************** UGLY */
+    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED) && (elementDictionary != NULL))
+    {
+        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+        if (element != NULL)
+        {
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED_SOFTWARE, arg);
+            if (arg != NULL)
+            {
+                char * software = arg->value.String;
+                std::cout << "SOFTWARE " << software << std::endl;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED_HARDWARE, arg);
+            if (arg != NULL)
+            {
+                char * hardware = arg->value.String;
+                std::cout << "hardware " << hardware << std::endl;
+            }
+        }
+    }
+    /************************* UGLY */
+
     // if the command received is a battery state changed
     switch(commandKey) {
         case ARCONTROLLER_DICTIONARY_KEY_COMMON_COMMONSTATE_BATTERYSTATECHANGED:
@@ -470,6 +523,15 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
         case ARCONTROLLER_DICTIONARY_KEY_COMMON_CALIBRATIONSTATE_MAGNETOCALIBRATIONREQUIREDSTATE:
             d->cmdMagnetoCalibrationNeedChangedRcv(elementDictionary);
             break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND:
+            std::cout << "OOOOOOOOOOOK" << std::endl;
+            d->cmdRelativeMovementChangedRcv(elementDictionary);
+            break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED:
+            d->cmdVideoResolutionChangedRcv(elementDictionary);
+            break;
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLATTRIMCHANGED:
+            d->cmdFlatTreamChangedRcv();
         default:
             break;
     }
@@ -626,7 +688,7 @@ void Drone::cmdPositionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDict
         if (arg != NULL)
         {
             _altitude.store(arg->value.Double);
-            //std::cout << "ALTITUDE " << arg->value.Double << std::endl;
+            std::cout << "ALTITUDE " << arg->value.Double << std::endl;
         }
     }
 }
@@ -700,6 +762,77 @@ void Drone::cmdMagnetoCalibrationNeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_
         }
     }
 }
+
+void Drone::cmdRelativeMovementChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_DX, arg);
+        if (arg != NULL)
+        {
+            float dX = arg->value.Float;
+            std::cout << "DRONE COMMAND MOVEBY dX: " << dX << std::endl;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_DY, arg);
+        if (arg != NULL)
+        {
+            float dY = arg->value.Float;
+            std::cout << "DRONE COMMAND MOVEBY dY: " << dY << std::endl;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_DZ, arg);
+        if (arg != NULL)
+        {
+            float dZ = arg->value.Float;
+            std::cout << "DRONE COMMAND MOVEBY dZ: " << dZ << std::endl;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_DPSI, arg);
+        if (arg != NULL)
+        {
+            float dPsi = arg->value.Float;
+            std::cout << "DRONE COMMAND MOVEBY DPSI: " << dPsi << std::endl;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_ERROR, arg);
+        if (arg != NULL)
+        {
+            eARCOMMANDS_ARDRONE3_PILOTINGEVENT_MOVEBYEND_ERROR error = eARCOMMANDS_ARDRONE3_PILOTINGEVENT_MOVEBYEND_ERROR(arg->value.I32);
+            std::cout << "DRONE COMMAND MOVEBY ERROR: " << error << std::endl;
+        }
+    }
+}
+
+
+void Drone::cmdVideoResolutionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED_TYPE, arg);
+        if (arg != NULL)
+        {
+            eARCOMMANDS_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED_TYPE type = eARCOMMANDS_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED_TYPE(arg->value.I32);
+            switch(type) {
+                case ARCOMMANDS_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED_TYPE_REC1080_STREAM480:
+                    std::cout << "STREAM 480" << std::endl;
+                    break;
+
+                case ARCOMMANDS_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED_TYPE_REC720_STREAM720:
+                    std::cout << "STREAM 720" << std::endl;
+                    break;
+                default:
+                    std::cout << "AUCUNE IDEE" << std::endl;
+            }
+
+        }
+    }
+}
+
+void Drone::cmdFlatTreamChangedRcv(){
+    _trimLock.store(false);
+}
+
 char* CODECBUFFER;
 int CODEBUFFERLEN;
 
@@ -946,6 +1079,9 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
 {
     Drone* self = (Drone*) drone;
 
+    if(frame->isIFrame){
+        std::cout << "je suis une frame" << std::endl;
+    }
     //uint8_t data
 
     //ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "GOT A FRAME");
