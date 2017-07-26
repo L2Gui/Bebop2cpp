@@ -1,6 +1,6 @@
 #include <vector>
 #include "Drone.h"
-
+#include <math.h>
 
 int interval(int value, int min, int max){
     if( min < value) {
@@ -40,7 +40,7 @@ int main(){
         sleep(1);
     }
 
-    assert(d.setMaxAltitude(1));
+    assert(d.setMaxAltitude(1.0f));
 
 
     std::cout << "INITIALISATION IS OK" << std::endl;
@@ -191,10 +191,10 @@ int main(){
             bool chess_board = cv::findChessboardCorners(frame, cv::Size(chess_x, chess_y), corners);
             //cv::cornerSubPix(frame, corners, cv::Size(11,11), cv::Size(-1,-1), cv::TermCriteria)
             if(chess_board) {
-                for(int i = 0; i < corners.size(); ++i){
+                /*for(int i = 0; i < corners.size(); ++i){
                     cv::circle(frame, corners[i], 5, cv::Scalar(0, 0, 255));
-                }
-                cv::circle(frame, corners[ref_pt], 10, cv::Scalar(0, 255, 0));
+                }*/
+                cv::circle(frame, corners[ref_pt], 20, cv::Scalar(0, 255, 0));
 
 
                 cv::solvePnP(model_pts, corners, camMatrix, distCoeff, rvec, tvec, !first_time);
@@ -238,13 +238,13 @@ int main(){
 
 
                     // ASKED = DRONE AXIS
-                    float askedDx = (float) (distFromWished.z / 100);
-                    float askedDy = -(float) (distFromWished.x / 100);
-                    float askedDz = -(float) (distFromWished.y / 100);
+                    float askedDx = (float) (distFromWished.z / 1000);
+                    float askedDy = -(float) (distFromWished.x / 1000);
+                    float askedDz = -(float) (distFromWished.y / 1000);
 
-                    askedDx = valueIfAboveEpsilon(askedDx, 0.01);
-                    askedDy = valueIfAboveEpsilon(askedDy, 0.01);
-                    askedDz = valueIfAboveEpsilon(askedDz, 0.01);
+                    askedDx = valueIfAboveEpsilon(askedDx, 0.1);
+                    askedDy = valueIfAboveEpsilon(askedDy, 0.1);
+                    askedDz = valueIfAboveEpsilon(askedDz, 0.1);
 
                     cv::putText(frame, "Asked Dy", cv::Point(100, 280), cv::QT_FONT_NORMAL, 1, cv::Scalar(0, 0, 0), 2,
                                 8); //x
@@ -260,8 +260,40 @@ int main(){
                     cv::putText(frame, std::to_string(askedDx), cv::Point(300, 380), cv::QT_FONT_NORMAL, 1,
                                 cv::Scalar(0, 0, 255), 2, 8);
 
-                    d.moveBy(0, 0, askedDz, 0);
 
+                    /**
+                     * ICI
+                     */
+
+                    //std::cout << tvec << std::endl;
+                    //double rotate = -atan(dist.x/dist.z);
+                    double rotate = atan(tvec.at<double>(0,0)/tvec.at<double>(2,0));
+                    //rotate = valueIfAboveEpsilon(rotate, 0.01);
+
+                    std::cout << "ROTATE " << rotate << std::endl;
+
+                    d.moveBy(askedDx,askedDy, askedDz, (float)rotate);
+                    /*
+                    if(askedDx != 0 ){
+                        d.moveBy(askedDx, 0, 0, 0);
+                        std::cout << "************************** X" << std::endl;
+                    }else{
+                        if(askedDy != 0 ){
+                            d.moveBy(0, askedDy, 0, 0);
+                            std::cout << "************************** Y" << std::endl;
+                        }else{
+                            if(askedDz != 0 ){
+                                d.moveBy(0, 0, askedDz, 0);
+                                std::cout << "************************** Z" << std::endl;
+                            }else{
+                                std::cout << "IM OKEY" << std::endl;
+                            }
+                        }
+                    }
+                     */
+                    /**
+                     * LÀ
+                     */
 
 /*
                     int askedRoll = (int)(distFromWished.x/30);
@@ -300,7 +332,7 @@ int main(){
                 // TODO uncomment the things bellow
 
 
-
+                d.moveBy(0,0,0,0);
 
 
                 //d.modifyRoll(0);
@@ -314,7 +346,7 @@ int main(){
              */
             std::string help("T: takeoff, L: land, F: follow");
             help.append(FOLLOW ? " (on)" : " (off)");
-            help.append(", Q: emergency");
+            help.append(", Q: emergency, S: stop");
             cv::putText(frame, help, cv::Point(10,465), cv::QT_FONT_NORMAL, 1, cv::Scalar(255,255,255), 2);
             cv::putText(frame, help, cv::Point(10,465), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 1);
 
@@ -345,13 +377,29 @@ int main(){
         if(k == 't') {
             d.takeOff();
         }else
-        if(k == 'm'){
-            std::cout << "move" << std::endl;
-            assert(d.moveBy(0, 0, 0, 0.79));
-            //d.modifyAltitude(-10);
-            // 1st down ?
-            // 2nd
-            // 3rd
+        if(k == 'u'){
+            std::cout << "move 0.5m up" << std::endl;
+            assert(d.moveBy(0, 0, -0.5f, 0));
+        }else
+        if(k == 'd'){
+            std::cout << "move 0.5m down" << std::endl;
+            assert(d.moveBy(0, 0, 0.5f, 0));
+        }else
+        if(k == 'y'){
+            std::cout << "move 0.5m forward" << std::endl;
+            assert(d.moveBy(0.5f, 0, 0, 0));
+        }else
+        if(k == 'h'){
+            std::cout << "move 0.5m backward" << std::endl;
+            assert(d.moveBy(-0.5f, 0, 0, 0));
+        }else
+        if(k == 'j'){
+            std::cout << "move 0.5m right" << std::endl;
+            assert(d.moveBy(0, 0.5f, 0, 0));
+        }else
+        if(k == 'g'){
+            std::cout << "move 0.5m left" << std::endl;
+            assert(d.moveBy(0, -0.5f, 0, 0));
         }else
         if(k == 's'){
             std::cout << "STOP" << std::endl;

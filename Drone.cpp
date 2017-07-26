@@ -524,7 +524,7 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             d->cmdMagnetoCalibrationNeedChangedRcv(elementDictionary);
             break;
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND:
-            std::cout << "OOOOOOOOOOOK" << std::endl;
+            //std::cout << "OOOOOOOOOOOK" << std::endl;
             d->cmdRelativeMovementChangedRcv(elementDictionary);
             break;
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED:
@@ -688,7 +688,7 @@ void Drone::cmdPositionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDict
         if (arg != NULL)
         {
             _altitude.store(arg->value.Double);
-            std::cout << "ALTITUDE " << arg->value.Double << std::endl;
+            //std::cout << "ALTITUDE " << arg->value.Double << std::endl;
         }
     }
 }
@@ -773,31 +773,31 @@ void Drone::cmdRelativeMovementChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *ele
         if (arg != NULL)
         {
             float dX = arg->value.Float;
-            std::cout << "DRONE COMMAND MOVEBY dX: " << dX << std::endl;
+            //std::cout << "DRONE COMMAND MOVEBY dX: " << dX << std::endl;
         }
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_DY, arg);
         if (arg != NULL)
         {
             float dY = arg->value.Float;
-            std::cout << "DRONE COMMAND MOVEBY dY: " << dY << std::endl;
+            //std::cout << "DRONE COMMAND MOVEBY dY: " << dY << std::endl;
         }
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_DZ, arg);
         if (arg != NULL)
         {
             float dZ = arg->value.Float;
-            std::cout << "DRONE COMMAND MOVEBY dZ: " << dZ << std::endl;
+            //std::cout << "DRONE COMMAND MOVEBY dZ: " << dZ << std::endl;
         }
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_DPSI, arg);
         if (arg != NULL)
         {
             float dPsi = arg->value.Float;
-            std::cout << "DRONE COMMAND MOVEBY DPSI: " << dPsi << std::endl;
+            //std::cout << "DRONE COMMAND MOVEBY DPSI: " << dPsi << std::endl;
         }
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND_ERROR, arg);
         if (arg != NULL)
         {
             eARCOMMANDS_ARDRONE3_PILOTINGEVENT_MOVEBYEND_ERROR error = eARCOMMANDS_ARDRONE3_PILOTINGEVENT_MOVEBYEND_ERROR(arg->value.I32);
-            std::cout << "DRONE COMMAND MOVEBY ERROR: " << error << std::endl;
+            //std::cout << "DRONE COMMAND MOVEBY ERROR: " << error << std::endl;
         }
     }
 }
