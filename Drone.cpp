@@ -352,6 +352,19 @@ bool Drone::moveBy(float dX, float dY, float dZ, float dPsi){
     return error == ARCONTROLLER_OK;
 }
 
+bool Drone::rotateCamera(float tilt, float pan){
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendCameraOrientation(
+            _deviceController->aRDrone3, (uint8_t) tilt, (uint8_t) pan);
+
+    if(error != ARCONTROLLER_OK){
+        ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "-error sending sendCameraOrientationV2 command with %f, %f",
+                    tilt,
+                    pan
+        );
+    }
+    return error == ARCONTROLLER_OK;
+}
+
 
 bool Drone::startStreaming() {
     _deviceController->aRDrone3->sendMediaStreamingVideoEnable(_deviceController->aRDrone3, 1);
@@ -379,10 +392,43 @@ bool Drone::blockingFlatTrim() {
 }
 
 bool Drone:: setMaxAltitude(float value){
-    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingSettingsMaxAltitude(_deviceController->aRDrone3, value);
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingSettingsMaxAltitude(
+            _deviceController->aRDrone3,
+            value);
 
     return error == ARCONTROLLER_OK;
 }
+
+
+bool Drone::setMaxVerticalSpeed(float value) {
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingSettingsSetAutonomousFlightMaxVerticalSpeed(
+            _deviceController->aRDrone3,
+            value
+    );
+
+    return error == ARCONTROLLER_OK;
+}
+
+
+bool Drone::setMaxHorizontalSpeed(float value) {
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingSettingsSetAutonomousFlightMaxHorizontalSpeed(
+            _deviceController->aRDrone3,
+            value
+    );
+
+    return error == ARCONTROLLER_OK;
+}
+
+bool Drone::setMaxRotationSpeed(float value) {
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingSettingsSetAutonomousFlightMaxRotationSpeed(
+            _deviceController->aRDrone3,
+            value
+    );
+
+    return error == ARCONTROLLER_OK;
+}
+
+
 
 /*
 bool Drone::startStreamingEXPL()
@@ -492,6 +538,109 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             {
                 char * hardware = arg->value.String;
                 std::cout << "hardware " << hardware << std::endl;
+            }
+        }
+    }
+    // DEPRECATED BUT WORKS
+    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATION) && (elementDictionary != NULL))
+    {
+        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+        if (element != NULL)
+        {
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATION_TILT, arg);
+            if (arg != NULL)
+            {
+                float tilt = arg->value.I8;
+                //std::cout << "(deprecated) TILT " << tilt << std::endl;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATION_PAN, arg);
+            if (arg != NULL)
+            {
+                float pan = arg->value.I8;
+                //std::cout << "(deprecated) PAN " << pan << std::endl;
+            }
+        }
+    }
+    // THE WAY TO DO IT... BUT DOES NOT WORK
+    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2) && (elementDictionary != NULL))
+    {
+        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+        if (element != NULL)
+        {
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2_TILT, arg);
+            if (arg != NULL)
+            {
+                float tilt = arg->value.Float;
+                std::cout << "TILT " << tilt << std::endl;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATIONV2_PAN, arg);
+            if (arg != NULL)
+            {
+                float pan = arg->value.Float;
+                std::cout << "PAN " << pan << std::endl;
+            }
+        }
+    }
+
+    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED) && (elementDictionary != NULL))
+    {
+        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+        if (element != NULL)
+        {
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_FOV, arg);
+            if (arg != NULL)
+            {
+                float fov = arg->value.Float;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMAX, arg);
+            if (arg != NULL)
+            {
+                float panMax = arg->value.Float;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMIN, arg);
+            if (arg != NULL)
+            {
+                float panMin = arg->value.Float;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMAX, arg);
+            if (arg != NULL)
+            {
+                float tiltMax = arg->value.Float;
+                std::cout << "NEW TILT MAX" << tiltMax << std::endl;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMIN, arg);
+            if (arg != NULL)
+            {
+                float tiltMin = arg->value.Float;
+                std::cout << "NEW TILT MIN" << tiltMin << std::endl;
+            }
+        }
+    }
+
+    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2) && (elementDictionary != NULL))
+    {
+        std::cout << "doot ****************************************" << std::endl;
+        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+        if (element != NULL)
+        {
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2_TILT, arg);
+            if (arg != NULL)
+            {
+                float tilt = arg->value.Float;
+                std::cout << "CENTER TILT " << tilt << std::endl;
+            }
+            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2_PAN, arg);
+            if (arg != NULL)
+            {
+                float pan = arg->value.Float;
             }
         }
     }

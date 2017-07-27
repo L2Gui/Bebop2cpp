@@ -160,6 +160,13 @@ public:
     float getMaxVerticalSpeed();
 
     /**
+     * Set the max horizontal speed
+     * @param value in m/s
+     * @return true if the command was well sent, false otherwise
+     */
+    bool setMaxHorizontalSpeed(float value);
+
+    /**
      * Set the max rotation speed
      * @param value in degrees/s
      * @return true if the command was well sent, false otherwise
@@ -244,6 +251,14 @@ public:
      */
     bool moveBy(float dX, float dY, float dZ, float dPsi);
 
+
+    /**
+     * Rotate the camera
+     * @param tilt value in degrees
+     * @param pan value in degrees
+     * @return true if the command was well sent, false otherwise
+     */
+    bool rotateCamera(float tilt, float pan);
     /**
      * Starts streaming
      * @warning the function is blocking, it will only return once the drone actually started the stream or encountered

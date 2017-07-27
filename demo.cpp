@@ -27,7 +27,12 @@ float valueIfAboveEpsilon(float value, float epsilon){
 
 int main(){
 
-    cv::Point3d wishedPosition(0, -50, 1000);
+    cv::Point3d step1(-1000, -50, 1500);
+    cv::Point3d step2(1000, -50, 1500);
+    cv::Point3d step3(0, -50, 1500);
+
+
+    cv::Point3d wishedPosition(step1);
 
     Drone d;
 
@@ -56,34 +61,8 @@ int main(){
 
     }else{
         std::cerr << "FLAT TRIM NOT OK" << std::endl;
+        return 1;
     }
-/*
-    d.takeOff();
-    sleep(5);
-
-    d.moveBy(1, 0, 0, 0);
-    sleep(5);
-
-    d.land();
-
-    return 0;
-*/
-    //d.takeOff();
-    //d.land();
-/*
-    assert(d.takeOff());
-
-    sleep(5);
-
-    assert(d.modifyPitch(15));
-    sleep(2);
-
-    assert(d.modifyPitch(0));
-    sleep(5);
-
-    assert(d.land());
-*/
-
 /*
     initStream();
 */
@@ -137,15 +116,6 @@ int main(){
         }
     }
 
-    //std::cout << model_pts << std::endl;
-    /*
-    std::vector<cv::Point3d> model_pts;
-    for(int x = -(ref_pt%chess_x); x < chess_x - ref_pt%chess_x; ++x){
-        for(int y = -(ref_pt/chess_x); y < chess_y - (ref_pt/chess_x); ++y){
-            model_pts.push_back(cv::Point3d(x, y, 0.));
-        }
-    }+
-    */
     /**
      * Axis
      */
@@ -168,7 +138,12 @@ int main(){
 
 
 
+    d.setMaxHorizontalSpeed(0.3f);
+    d.setMaxVerticalSpeed(0.3f);
+    //d.setMaxRotationSpeed()
 
+
+    int step = 1;
 
 
     while(true)
@@ -260,42 +235,44 @@ int main(){
                     cv::putText(frame, std::to_string(askedDx), cv::Point(300, 380), cv::QT_FONT_NORMAL, 1,
                                 cv::Scalar(0, 0, 255), 2, 8);
 
-
-                    /**
-                     * ICI
-                     */
-
-                    //std::cout << tvec << std::endl;
-                    //double rotate = -atan(dist.x/dist.z);
                     double rotate = atan(tvec.at<double>(0,0)/tvec.at<double>(2,0));
+                    cv::Point center(frame.cols/2, frame.rows/2);
+
+                    cv::line(frame, center - cv::Point(0, 100), center + cv::Point(0, 100), cv::Scalar(0,0,0), 2);
+                    cv::line(frame, center - cv::Point(0, 100), center + cv::Point(0, 100), cv::Scalar(255,255,255), 1);
+
+                    cv::line(frame, center - cv::Point(100, 0), center + cv::Point(100, 0), cv::Scalar(0,0,0), 2);
+                    cv::line(frame, center - cv::Point(100, 0), center + cv::Point(100, 0), cv::Scalar(255,255,255), 1);
+
                     //rotate = valueIfAboveEpsilon(rotate, 0.01);
 
-                    std::cout << "ROTATE " << rotate << std::endl;
+                    double camTilt = atan(tvec.at<double>(1,0)/tvec.at<double>(2,0));
 
-                    d.moveBy(askedDx,askedDy, askedDz, (float)rotate);
-                    /*
-                    if(askedDx != 0 ){
-                        d.moveBy(askedDx, 0, 0, 0);
-                        std::cout << "************************** X" << std::endl;
-                    }else{
-                        if(askedDy != 0 ){
-                            d.moveBy(0, askedDy, 0, 0);
-                            std::cout << "************************** Y" << std::endl;
+                    camTilt *= -57.9;
+
+                    camTilt -= 13; // DEFAULT
+
+                    std::cout << camTilt << std::endl;
+                    d.rotateCamera((float)camTilt, 0);
+
+
+                    if(askedDx == 0 and askedDy == 0){
+                        if(step == 1){
+                            wishedPosition = step2;
+                            std::cout << "STEP1 ok" << std::endl;
+                        }else if(step == 2) {
+                            wishedPosition = step3;
+                            std::cout << "STEp2 ok" << std::endl;
                         }else{
-                            if(askedDz != 0 ){
-                                d.moveBy(0, 0, askedDz, 0);
-                                std::cout << "************************** Z" << std::endl;
-                            }else{
-                                std::cout << "IM OKEY" << std::endl;
-                            }
+                            std::cout << "LAND" << std::endl;
+                            d.land();
                         }
+                        step++;
                     }
-                     */
-                    /**
-                     * LÀ
-                     */
+                    d.moveBy(askedDx,askedDy, askedDz, (float)rotate);
 
-/*
+                    /*
+                    /// OLD WAY WITH PITCH ROLL AND ALT COMMANDS
                     int askedRoll = (int)(distFromWished.x/30);
                     int askedPitch = (int)(distFromWished.z/30);
                     int askedAlt = (int)(distFromWished.y/50);
@@ -321,24 +298,8 @@ int main(){
                 first_time = false;
             }else{
                 cv::putText(frame, "STOP EVERYTHIG, NO CHESSBOARD !", cv::Point(10,300), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 3, 8);
-
-
-
-
-
-
-
-
-                // TODO uncomment the things bellow
-
-
                 d.moveBy(0,0,0,0);
-
-
-                //d.modifyRoll(0);
-                //d.modifyAltitude(0);
-                //d.modifyPitch(0);
-
+                //d.rotateCamera(-13.0f, 0);
                 first_time = true;
             }
             /**
@@ -368,9 +329,6 @@ int main(){
         if(k == 'f') {
             FOLLOW = !FOLLOW;
             if(!FOLLOW){
-                d.modifyRoll(0);
-                d.modifyPitch(0);
-                d.modifyAltitude(0);
                 assert(d.moveBy(0,0,0,0));
             }
         }else
