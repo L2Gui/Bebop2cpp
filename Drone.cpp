@@ -39,6 +39,7 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
         _isValid = false;
         return;
     }
+    printf("DIRNAME = %s\n", _file_dir_name);
     snprintf(_file_name, sizeof(_file_name), "%s/%s", _file_dir_name, FIFO_NAME);
 
     _videoOut = fopen(_file_name, "wb+");
@@ -54,7 +55,8 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
     /**
      * Exchanging JSON information with the drone
      */
-    this->ardiscoveryConnect();
+    // TODO actually, there is no usage of it right now and, as is, it makes multidrone not working.
+    //this->ardiscoveryConnect();
 
 
     /**
@@ -63,6 +65,7 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
     if (!failed)
     {
         /* start */
+        // No use right now and probably ever since libarcontroller takes care of networking stuffs
         //failed = this->startNetwork();
     }
     /**

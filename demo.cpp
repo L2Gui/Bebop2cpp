@@ -2,6 +2,9 @@
 #include "Drone.h"
 #include <math.h>
 
+
+#define DRONE_IP "10.42.0.11"
+
 int interval(int value, int min, int max){
     if( min < value) {
         if( value < max){
@@ -34,11 +37,12 @@ int main(){
 
     cv::Point3d wishedPosition(step1);
 
-    Drone d;
+    Drone d(DRONE_IP);
 
     assert(d.isValid());
 
-    assert(d.connect());
+    d.connect();
+    //assert(d.connect());
 
 
     while(!d.isRunning()){
@@ -146,6 +150,10 @@ int main(){
     int step = 1;
 
 
+    cv::namedWindow(DRONE_IP);
+
+    double camTilt, prevCamTilt = INT_MAX/2;
+
     while(true)
     {
         cap >> tmp;
@@ -246,14 +254,19 @@ int main(){
 
                     //rotate = valueIfAboveEpsilon(rotate, 0.01);
 
-                    double camTilt = atan(tvec.at<double>(1,0)/tvec.at<double>(2,0));
+                    camTilt = atan(tvec.at<double>(1,0)/tvec.at<double>(2,0));
 
                     camTilt *= -57.9;
 
                     camTilt -= 13; // DEFAULT
 
-                    std::cout << camTilt << std::endl;
-                    d.rotateCamera((float)camTilt, 0);
+                    if( abs((int)(camTilt - prevCamTilt)) > 1 ) {
+                        std::cout << "NEW TILT " << camTilt << std::endl;
+                        //TODO Changing camera tilt probably reduces position precision since it's numerical
+                        // stabilisation with a fish eye and not optical stabilisation
+                        d.rotateCamera((float) camTilt, 0);
+                        prevCamTilt = camTilt;
+                    }
 
 
                     if(askedDx == 0 and askedDy == 0){
@@ -315,7 +328,7 @@ int main(){
                         cv::QT_FONT_NORMAL, 1, cv::Scalar(255, 0, 255), 3, 8);
 
 
-            cv::imshow("frame", frame);
+            cv::imshow(DRONE_IP, frame);
         }
         char k = (char)cv::waitKey(10);
 
