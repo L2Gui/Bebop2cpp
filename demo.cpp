@@ -3,8 +3,28 @@
 #include <math.h>
 
 
-#define DRONE_IP "10.42.0.11"
+/*
+ * PRIVATE HEADER
+ */
 
+#define DRONE_IP                    "10.42.0.11"
+#define DRONE_MAX_ALTITUDE          1.0
+#define DRONE_MAX_HORIZONTAL_SPEED  0.3
+#define DRONE_MAX_VERTICAL_SPEED    0.3
+
+/*
+ * UTILITY FUNCTIONS
+ */
+/**
+ * Returns:
+ *      value if value is inside [min; max],
+ *      min if value < min,
+ *      max if value > max
+ * @param value
+ * @param min
+ * @param max
+ * @return
+ */
 int interval(int value, int min, int max){
     if( min < value) {
         if( value < max){
@@ -17,6 +37,12 @@ int interval(int value, int min, int max){
     }
 }
 
+/**
+ * Returns value if value is greater than +epsilon or lower than -epsilon. Otherwise, 0 is returned
+ * @param value
+ * @param epsilon
+ * @return
+ */
 float valueIfAboveEpsilon(float value, float epsilon){
     if(0 < value and value < epsilon){
         return 0;
@@ -28,60 +54,61 @@ float valueIfAboveEpsilon(float value, float epsilon){
 
 }
 
+/*
+ * MAIN
+ */
 int main(){
 
-    cv::Point3d step1(-1000, -50, 1500);
-    cv::Point3d step2(1000, -50, 1500);
-    cv::Point3d step3(0, -50, 1500);
 
+    /// ******************************************************************************************** CONFIGURE WAYPOINTS
+    cv::Point3d steps[] = {
+            cv::Point3d(-1000, -50, 1500),
+            cv::Point3d(1000, -50, 1500),
+            cv::Point3d(0, -50, 1500)
+    };
 
-    cv::Point3d wishedPosition(step1);
+    int stepsCount = 3;
+    int stepCurrent= 0;
 
+    cv::Point3d wishedPosition(steps[0]);
+
+    /// ***************************************************************************** CONNECT TO AND CONFIGURE THE DRONE
     Drone d(DRONE_IP);
 
     assert(d.isValid());
+    assert(d.connect());
 
-    d.connect();
-    //assert(d.connect());
+    // Waiting for the drone to be ready
+    while(!d.isRunning()){ sleep(1); }
 
-
-    while(!d.isRunning()){
-        sleep(1);
-    }
-
-    assert(d.setMaxAltitude(1.0f));
-
+    assert(d.setMaxAltitude(DRONE_MAX_ALTITUDE));
+    assert(d.setMaxHorizontalSpeed(DRONE_MAX_HORIZONTAL_SPEED));
+    assert(d.setMaxVerticalSpeed(DRONE_MAX_VERTICAL_SPEED));
 
     std::cout << "INITIALISATION IS OK" << std::endl;
 
-
-
     assert(d.startStreaming());
-
     std::cout << "STREAMING IS OK" << std::endl;
 
+    // Flat trim at start. The drone MUST be on the ground at that time
     if(d.blockingFlatTrim()) {
         std::cout << "FLAT TRIM IS OK" << std::endl;
-
     }else{
         std::cerr << "FLAT TRIM NOT OK" << std::endl;
         return 1;
     }
-/*
-    initStream();
-*/
 
+
+    // Initialising the openCV camera
     cv::VideoCapture cap(d.getVideoPath());
     while(!cap.isOpened()){
         sleep(1);
         cap = cv::VideoCapture(d.getVideoPath());
     }
 
-    /**
-     * UGLY CP FROM CPOS ***********************************************************************************************
-     */
+    /// *********************************** VIDEO ANALYSIS INITIALISATION. TODO SHOULD BE INSIDE A METHOD OF DRONE CLASS
 
-
+    // Camera calibration file
     cv::FileStorage fs("calib_bd2.xml", cv::FileStorage::READ);
 
     if(!fs.isOpened()){
@@ -90,24 +117,18 @@ int main(){
     }
 
     cv::Mat camMatrix, distCoeff;
-    float square_size;
+    float unit;
 
     fs["camera_matrix"] >> camMatrix;
     fs["distortion_coefficients"] >> distCoeff;
-    fs["square_size"] >> square_size;
+    fs["square_size"] >> unit;
     fs.release();
 
-    //std::cout << camMatrix << std::endl << std::endl;
-    //std::cout << distCoeff << std::endl << std::endl;
-    //std::cout << square_size << std::endl << std::endl;
 
+    // Chessboard specifications
     int chess_x = 9;
     int chess_y = 6;
     int ref_pt = 22;
-
-    /**
-     * Chess board pts
-     */
 
     cv::Mat model_pts = cv::Mat::zeros(chess_x * chess_y, 3, CV_32FC1);
 
@@ -120,45 +141,34 @@ int main(){
         }
     }
 
-    /**
-     * Axis
-     */
+    // Axis to be displayed on the video (it helps to see if the calibration is ~correct or not)
     std::vector<cv::Point3d> axis;
     axis.push_back(cv::Point3d(3, 0, 0));
     axis.push_back(cv::Point3d(0, 3, 0));
     axis.push_back(cv::Point3d(0, 0, -3));
 
-    bool first_time = true;
+
     cv::Mat rvec, tvec;
-    /**
-     * *****************************************************************************************************************
-     */
+
     cv::Point3d distFromWished(0,0,0);
     cv::Point3d dist(0,0,0);
 
     cv::Mat tmp;
     cv::Mat frame;
-    bool FOLLOW = false;
 
-
-
-    d.setMaxHorizontalSpeed(0.3f);
-    d.setMaxVerticalSpeed(0.3f);
-    //d.setMaxRotationSpeed()
-
-
-    int step = 1;
-
-
-    cv::namedWindow(DRONE_IP);
+    bool FOLLOW = false;    // if TRUE, the drone will follow the chessboard
+    bool proceed = true;    // if TRUE, the program will interact with the drone
+    bool first_time = true; // if TRUE, the program will use the previous chessboard location as a hint
 
     double camTilt, prevCamTilt = INT_MAX/2;
 
-    while(true)
+    cv::namedWindow(DRONE_IP);
+    while(proceed)
     {
         cap >> tmp;
         if(tmp.data != NULL) {
-            // last image only
+
+            // We only want the last image, so we drop the previous ones. Ugly but works fine.
             while (1) {
                 if(tmp.data != NULL) {
                     tmp.copyTo(frame);
@@ -167,18 +177,18 @@ int main(){
                 }
                 cap >> tmp;
             }
-            /**
-             * UGLY CP FROM CPOS AGAIN *********************************************************************************
-             */
+
             std::vector<cv::Point2d> corners;
             bool chess_board = cv::findChessboardCorners(frame, cv::Size(chess_x, chess_y), corners);
             //cv::cornerSubPix(frame, corners, cv::Size(11,11), cv::Size(-1,-1), cv::TermCriteria)
+
             if(chess_board) {
+                /// **************************************************************************** DECORATIONS FOR THE IHM
                 /*for(int i = 0; i < corners.size(); ++i){
                     cv::circle(frame, corners[i], 5, cv::Scalar(0, 0, 255));
                 }*/
-                cv::circle(frame, corners[ref_pt], 20, cv::Scalar(0, 255, 0));
 
+                cv::circle(frame, corners[ref_pt], 20, cv::Scalar(0, 255, 0));
 
                 cv::solvePnP(model_pts, corners, camMatrix, distCoeff, rvec, tvec, !first_time);
 
@@ -191,11 +201,11 @@ int main(){
                 cv::line(frame, corners[ref_pt], imgPts[2], cv::Scalar(0, 0, 255), 5);
 
 
-
+                /// ****************************************************************** GETTING THE POSITION OF THE DRONE
                 cv::Rodrigues(rvec, rotM);
 
                 cv::Mat camPos = rotM.t() * tvec;
-                camPos *= square_size;
+                camPos *= unit;
                 dist.x = camPos.at<double>(0,0);
                 dist.y = camPos.at<double>(1,0);
                 dist.z = camPos.at<double>(2,0);
@@ -220,7 +230,7 @@ int main(){
                                 1, cv::Scalar(0, 0, 255), 2, 8);
 
 
-                    // ASKED = DRONE AXIS
+                    // AskedDx, y, z are values according to the drone axis
                     float askedDx = (float) (distFromWished.z / 1000);
                     float askedDy = -(float) (distFromWished.x / 1000);
                     float askedDz = -(float) (distFromWished.y / 1000);
@@ -243,6 +253,7 @@ int main(){
                     cv::putText(frame, std::to_string(askedDx), cv::Point(300, 380), cv::QT_FONT_NORMAL, 1,
                                 cv::Scalar(0, 0, 255), 2, 8);
 
+                    /// **************************************************** TILT OF THE CAMERA TO FOLLOW THE CHESSBOARD
                     double rotate = atan(tvec.at<double>(0,0)/tvec.at<double>(2,0));
                     cv::Point center(frame.cols/2, frame.rows/2);
 
@@ -267,57 +278,43 @@ int main(){
                         d.rotateCamera((float) camTilt, 0);
                         prevCamTilt = camTilt;
                     }
+                    /// ************************************************************************* PROPER MOVE BY COMMAND
 
-
-                    if(askedDx == 0 and askedDy == 0){
-                        if(step == 1){
-                            wishedPosition = step2;
-                            std::cout << "STEP1 ok" << std::endl;
-                        }else if(step == 2) {
-                            wishedPosition = step3;
-                            std::cout << "STEp2 ok" << std::endl;
-                        }else{
-                            std::cout << "LAND" << std::endl;
-                            d.land();
-                        }
-                        step++;
-                    }
                     d.moveBy(askedDx,askedDy, askedDz, (float)rotate);
 
-                    /*
-                    /// OLD WAY WITH PITCH ROLL AND ALT COMMANDS
-                    int askedRoll = (int)(distFromWished.x/30);
-                    int askedPitch = (int)(distFromWished.z/30);
-                    int askedAlt = (int)(distFromWished.y/50);
+                    /// ************************** IF THE DRONE REACHED THE CURRENT WAYPOINT, GO TO THE NEXT ONE OR LAND
 
-                    askedRoll = interval(askedRoll, -10, 10);
-                    askedAlt = interval(askedAlt, -10, 10);
-                    askedPitch = interval(askedPitch, -10, 10);
-
-                    cv::putText(frame, "Asked roll", cv::Point(100,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
-                    cv::putText(frame, "Asked altit", cv::Point(100,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
-                    cv::putText(frame, "Asked pitch", cv::Point(100,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,0), 2, 8);
-
-                    cv::putText(frame, std::to_string(askedRoll), cv::Point(300,280), cv::QT_FONT_NORMAL, 1, cv::Scalar(255,0,0), 2, 8);
-                    cv::putText(frame, std::to_string(askedAlt), cv::Point(300,330), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,255,0), 2, 8);
-                    cv::putText(frame, std::to_string(askedPitch), cv::Point(300,380), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 2, 8);
-
-                    //d.modifyRoll((int8_t) askedRoll);
-                    //d.modifyAltitude((int8_t) askedAlt);
-                    //d.modifyPitch((int8_t) askedPitch);
-                    */
+                    if(askedDx == 0 and askedDy == 0){
+                        ++stepCurrent;
+                        if(stepCurrent >= stepsCount){
+                            std::cout << "ALL WAYPOINTS REACHED: LAND" << std::endl;
+                            d.land();
+                        }else {
+                            std::cout << "WAYPOINT " << stepCurrent << "/" << stepsCount << " REACHED" << std::endl;
+                            wishedPosition = steps[stepCurrent];
+                        }
+                    }
                 }
 
                 first_time = false;
             }else{
-                cv::putText(frame, "STOP EVERYTHIG, NO CHESSBOARD !", cv::Point(10,300), cv::QT_FONT_NORMAL, 1, cv::Scalar(0,0,255), 3, 8);
+                /// ***************************************************************************** NO CHESSBOARD DETECTED
+                cv::putText(frame,
+                            "STOP EVERYTHIG, NO CHESSBOARD !",
+                            cv::Point(10,300),
+                            cv::QT_FONT_NORMAL,
+                            1,
+                            cv::Scalar(0,0,255),
+                            3,
+                            8
+                );
                 d.moveBy(0,0,0,0);
+                // Better without. TODO look around to find the board if it's not in the sight of the drone
                 //d.rotateCamera(-13.0f, 0);
                 first_time = true;
             }
-            /**
-             * *********************************************************************************************************
-             */
+            /// ********************************************************************************************** IHM STUFF
+
             std::string help("T: takeoff, L: land, F: follow");
             help.append(FOLLOW ? " (on)" : " (off)");
             help.append(", Q: emergency, S: stop");
@@ -330,60 +327,66 @@ int main(){
 
             cv::imshow(DRONE_IP, frame);
         }
+
+
+        /// ****************************************************************************************** IHM KEY REACTIONS
+
         char k = (char)cv::waitKey(10);
-
-        if(k == 'l') {
-            d.land();
-        }else
-        if(k == 'q') {
-            d.emergency();
-            break;
-        }else
-        if(k == 'f') {
-            FOLLOW = !FOLLOW;
-            if(!FOLLOW){
-                assert(d.moveBy(0,0,0,0));
-            }
-        }else
-        if(k == 't') {
-            d.takeOff();
-        }else
-        if(k == 'u'){
-            std::cout << "move 0.5m up" << std::endl;
-            assert(d.moveBy(0, 0, -0.5f, 0));
-        }else
-        if(k == 'd'){
-            std::cout << "move 0.5m down" << std::endl;
-            assert(d.moveBy(0, 0, 0.5f, 0));
-        }else
-        if(k == 'y'){
-            std::cout << "move 0.5m forward" << std::endl;
-            assert(d.moveBy(0.5f, 0, 0, 0));
-        }else
-        if(k == 'h'){
-            std::cout << "move 0.5m backward" << std::endl;
-            assert(d.moveBy(-0.5f, 0, 0, 0));
-        }else
-        if(k == 'j'){
-            std::cout << "move 0.5m right" << std::endl;
-            assert(d.moveBy(0, 0.5f, 0, 0));
-        }else
-        if(k == 'g'){
-            std::cout << "move 0.5m left" << std::endl;
-            assert(d.moveBy(0, -0.5f, 0, 0));
-        }else
-        if(k == 's'){
-            std::cout << "STOP" << std::endl;
-            d.modifyYaw(0);
-            d.modifyRoll(0);
-            d.modifyPitch(0);
-            d.modifyAltitude(0);
-            assert(d.moveBy(0, 0, 0, 0));
+        switch(k){
+            case 'l':
+                d.land();
+                break;
+            case 'q':
+                d.emergency();
+                proceed = false;
+                break;
+            case 's':
+                std::cout << "STOP" << std::endl;
+                d.modifyYaw(0);
+                d.modifyRoll(0);
+                d.modifyPitch(0);
+                d.modifyAltitude(0);
+                assert(d.moveBy(0, 0, 0, 0));
+                FOLLOW = false;
+                break;
+            case 'f':
+                FOLLOW = !FOLLOW;
+                if(!FOLLOW){
+                    assert(d.moveBy(0,0,0,0));
+                }
+                break;
+            case 't':
+                d.takeOff();
+                break;
+                /// *********************************************************************************** IHM "CHEAT" KEYS
+            case 'u':
+                std::cout << "move 0.5m up" << std::endl;
+                assert(d.moveBy(0, 0, -0.5f, 0));
+                break;
+            case 'd':
+                std::cout << "move 0.5m down" << std::endl;
+                assert(d.moveBy(0, 0, 0.5f, 0));
+                break;
+            case 'y':
+                std::cout << "move 0.5m forward" << std::endl;
+                assert(d.moveBy(0.5f, 0, 0, 0));
+                break;
+            case 'h':
+                std::cout << "move 0.5m backward" << std::endl;
+                assert(d.moveBy(-0.5f, 0, 0, 0));
+                break;
+            case 'j':
+                std::cout << "move 0.5m right" << std::endl;
+                assert(d.moveBy(0, 0.5f, 0, 0));
+                break;
+            case 'g':
+                std::cout << "move 0.5m left" << std::endl;
+                assert(d.moveBy(0, -0.5f, 0, 0));
+                break;
+            default:
+                break;
         }
-
     }
-
-    d.land();
 
     return 0;
 }

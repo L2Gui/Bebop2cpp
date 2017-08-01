@@ -18,7 +18,7 @@
  * Methods
  */
 
-/// PUBLIC
+/// ************************************************************************************************************* PUBLIC
 Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned int c2dPort, unsigned int d2cPort):
         _deviceController(NULL),
         _deviceState(ARCONTROLLER_DEVICE_STATE_MAX),
@@ -29,7 +29,6 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
 {
     bool failed = false;
     ARDISCOVERY_Device_t *device = NULL;
-    pid_t child = 0;
     eARCONTROLLER_ERROR error = ARCONTROLLER_OK;
 
 
@@ -235,14 +234,8 @@ bool Drone::connect()
     bool res = _isValid and _isConnected and !isStopped();
     return res;
 }
-/// GETTERS
 
-int Drone::getBatteryLvl() {
-    return _batteryLvl;
-}
-
-
-/// COMMANDS
+/// *********************************************************************************************************** COMMANDS
 bool Drone::takeOff() {
     eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPilotingTakeOff(_deviceController->aRDrone3);
 
@@ -461,7 +454,7 @@ bool Drone::startStreamingEXPL()
 }
 */
 
-/// GETTERS
+/// ************************************************************************************************************ GETTERS
 bool Drone::isConnected() {
     return _isConnected;
 }
@@ -504,7 +497,15 @@ bool Drone::isStreaming() {
 }
 
 
-/// PROTECTED
+int Drone::getBatteryLvl() {
+    return _batteryLvl;
+}
+
+std::string Drone::getVideoPath() {
+    return _file_name;
+}
+
+/// ********************************************************************************************************** PROTECTED
 /**
  * STATIC
  * @param commandKey
@@ -522,7 +523,7 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
     if(elementDictionary == NULL)
         return;
 
-    /***************************** UGLY */
+    /***************************** SHOULD BE WRAPPED INSIDE PRIVATE METHODS */
     if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED) && (elementDictionary != NULL))
     {
         ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
@@ -647,7 +648,7 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             }
         }
     }
-    /************************* UGLY */
+    /************************* SHOULD BE WRAPPED INSIDE PRIVATE METHODS */
 
     // if the command received is a battery state changed
     switch(commandKey) {
@@ -1023,6 +1024,7 @@ eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t co
 
 /// PRIVATE
 
+/// *************************************************************************************** JSON CONFIG FILE. NOT USED v
 bool Drone::ardiscoveryConnect ()
 {
     bool failed = false;
@@ -1100,139 +1102,14 @@ eARDISCOVERY_ERROR Drone::ARDISCOVERY_Connection_ReceiveJsonCallback (uint8_t *d
 
     return err;
 }
-/*
-bool Drone::startNetwork ()
-{
-    bool failed = false;
-    eARNETWORK_ERROR netError = ARNETWORK_OK;
-    eARNETWORKAL_ERROR netAlError = ARNETWORKAL_OK;
-    int pingDelay = 0; // 0 means default, -1 means no ping
-
-    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- Start ARNetwork");
-
-    // Create the ARNetworkALManager
-    _alManager = ARNETWORKAL_Manager_New(&netAlError);
-    if (netAlError != ARNETWORKAL_OK)
-    {
-        failed = true;
-    }
-
-    if (!failed)
-    {
-        // Initilize the ARNetworkALManager
-        netAlError = ARNETWORKAL_Manager_InitWifiNetwork(_alManager, _ip.c_str(), _c2dPort, _d2cPort, 1);
-        if (netAlError != ARNETWORKAL_OK)
-        {
-            failed = true;
-        }
-    }
-
-    if (!failed)
-    {
-        // Create the ARNetworkManager.
-        _netManager = ARNETWORK_Manager_New(_alManager, numC2dParams, c2dParams, numD2cParams, d2cParams, pingDelay, onDisconnectNetwork, NULL, &netError);
-        if (netError != ARNETWORK_OK)
-        {
-            failed = true;
-        }
-    }
-
-    if (!failed)
-    {
-        // Create and start Tx and Rx threads.
-        if (ARSAL_Thread_Create(&(_rxThread), ARNETWORK_Manager_ReceivingThreadRun, _netManager) != 0)
-        {
-            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Creation of Rx thread failed.");
-            failed = true;
-        }
-
-        if (ARSAL_Thread_Create(&(_txThread), ARNETWORK_Manager_SendingThreadRun, _netManager) != 0)
-        {
-            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "Creation of Tx thread failed.");
-            failed = true;
-        }
-    }
-
-    // Print net error
-    if (failed)
-    {
-        if (netAlError != ARNETWORKAL_OK)
-        {
-            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "ARNetWorkAL Error : %s", ARNETWORKAL_Error_ToString(netAlError));
-        }
-
-        if (netError != ARNETWORK_OK)
-        {
-            ARSAL_PRINT(ARSAL_PRINT_ERROR, TAG, "ARNetWork Error : %s", ARNETWORK_Error_ToString(netError));
-        }
-    }
-
-    return failed;
-}
-void Drone::stopNetwork()
-{
-    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- Stop ARNetwork");
-
-    // ARNetwork cleanup
-    if (_netManager != NULL)
-    {
-        ARNETWORK_Manager_Stop(_netManager);
-        if (_rxThread != NULL)
-        {
-            ARSAL_Thread_Join(_rxThread, NULL);
-            ARSAL_Thread_Destroy(&(_rxThread));
-            _rxThread = NULL;
-        }
-
-        if (_txThread != NULL)
-        {
-            ARSAL_Thread_Join(_txThread, NULL);
-            ARSAL_Thread_Destroy(&(_txThread));
-            _txThread = NULL;
-        }
-    }
-
-    if (_alManager != NULL)
-    {
-        ARNETWORKAL_Manager_Unlock(_alManager);
-
-        ARNETWORKAL_Manager_CloseWifiNetwork(_alManager);
-    }
-
-    ARNETWORK_Manager_Delete(&(_netManager));
-    ARNETWORKAL_Manager_Delete(&(_alManager));
-}
-void Drone::onDisconnectNetwork(ARNETWORK_Manager_t *manager, ARNETWORKAL_Manager_t *alManager, void *drone)
-{
-    Drone* self = (Drone*) drone;
-    ARSAL_PRINT(ARSAL_PRINT_DEBUG, TAG, "onDisconnectNetwork ...");
-}
-
-eARNETWORK_MANAGER_CALLBACK_RETURN Drone::arnetworkCmdCallback(int buffer_id, uint8_t *data, void *drone, eARNETWORK_MANAGER_CALLBACK_STATUS cause)
-{
-    std::cout << "coucou" << std::endl;
-
-    Drone* self = (Drone*) drone;
-
-    eARNETWORK_MANAGER_CALLBACK_RETURN retval = ARNETWORK_MANAGER_CALLBACK_RETURN_DEFAULT;
-
-    ARSAL_PRINT(ARSAL_PRINT_DEBUG, TAG, "    - arnetworkCmdCallback %d, cause:%d ", buffer_id, cause);
-
-    if (cause == ARNETWORK_MANAGER_CALLBACK_STATUS_TIMEOUT)
-    {
-        retval = ARNETWORK_MANAGER_CALLBACK_RETURN_DATA_POP;
-    }
-
-    return retval;
-}
-*/
+/// *************************************************************************************** JSON CONFIG FILE. NOT USED ^
 
 eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame, void *drone)
 {
     Drone* self = (Drone*) drone;
 
     if(frame->isIFrame){
-        std::cout << "je suis une frame" << std::endl;
+        std::cout << "FULL iFrame received" << std::endl;
     }
     //uint8_t data
 
@@ -1277,8 +1154,4 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
     }
 /**/
     return ARCONTROLLER_OK;
-}
-
-std::string Drone::getVideoPath() {
-    return _file_name;
 }

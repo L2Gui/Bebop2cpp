@@ -19,7 +19,8 @@ extern "C" {
 
 #define FIFO_DIR_PATTERN "/tmp/arsdk_XXXXXX"
 #define FIFO_NAME "arsdk_fifo"
-// CHANGE TO THE NAME OF THE BEBOP
+
+// TODO CHANGE TO THE NAME OR THE ADDRESS OF THE BEBOP
 #define TAG "BEBOP-CONTROLLER"
 
 #define BEBOP_DEFAULT_IP_ADDRESS "192.168.42.1"
@@ -319,14 +320,7 @@ private:
     /// ********************************************************************************* PRIVATE FUNCTIONS & ATTRIBUTES
     bool ardiscoveryConnect();
 
-    /*
-    bool startNetwork();
-    void stopNetwork();
-
-    static eARNETWORK_MANAGER_CALLBACK_RETURN arnetworkCmdCallback(int buffer_id, uint8_t *data, void *drone, eARNETWORK_MANAGER_CALLBACK_STATUS cause);
-     */
-
-    /// **************************************************************************************************** JSON CONFIG
+    /// *********************************************************************************************** JSON CONFIG ****
     static eARDISCOVERY_ERROR ARDISCOVERY_Connection_SendJsonCallback (uint8_t *dataTx,
                                                                        uint32_t *dataTxSize,
                                                                        void *drone);
@@ -337,7 +331,7 @@ private:
 
     //static void onDisconnectNetwork (ARNETWORK_Manager_t *manager, ARNETWORKAL_Manager_t *alManager, void *drone);
 
-    /// ***************************************************************************************************** ATTRIBUTES
+    /// ************************************************************************************************ ATTRIBUTES ****
     std::string _ip;
     int _discoveryPort;
     std::atomic<bool> _isConnected;
@@ -363,7 +357,7 @@ private:
     ARCONTROLLER_Device_t *_deviceController;
     ARCOMMANDS_Decoder_t *_commandsDecoder;
 
-    /// *************************************************************************************** VIDEO RELATED ATTRIBUTES
+    /// ********************************************************************************** VIDEO RELATED ATTRIBUTES ****
     char _file_dir_name[sizeof(FIFO_DIR_PATTERN)] = FIFO_DIR_PATTERN;
     char _file_name[128] = "";
 
@@ -378,7 +372,7 @@ private:
     ARSAL_Thread_t _videoTxThread;
     ARSAL_Thread_t _videoRxThread;
     */
-    /// ************************************************************************************** STATES RELATED ATTRIBUTES
+    /// ********************************************************************************* STATES RELATED ATTRIBUTES ****
     //eARCONTROLLER_ERROR error;
     eARCONTROLLER_DEVICE_STATE _deviceState;
     std::atomic<eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE> _flyingState;
