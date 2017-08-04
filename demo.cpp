@@ -7,10 +7,11 @@
  * PRIVATE HEADER
  */
 
-#define DRONE_IP                    "10.42.0.11"
+#define DRONE_IP                    "10.42.0.10"
 #define DRONE_MAX_ALTITUDE          1.0
 #define DRONE_MAX_HORIZONTAL_SPEED  0.3
 #define DRONE_MAX_VERTICAL_SPEED    0.3
+#define LAND_AFTER_LAST_WAYPOINT    true
 
 /*
  * UTILITY FUNCTIONS
@@ -61,21 +62,22 @@ int main(){
 
 
     /// ******************************************************************************************** CONFIGURE WAYPOINTS
-    cv::Point3d steps[] = {
-            cv::Point3d(-1000, -50, 1500),
-            cv::Point3d(1000, -50, 1500),
-            cv::Point3d(0, -50, 1500)
+    std::vector<cv::Point3d> steps = {
+            cv::Point3d(-1000, 0, 1500),
+            cv::Point3d(1000, 0, 1500),
+            cv::Point3d(-500, 0, 2000),
+            cv::Point3d(500, 0, 2000),
+            cv::Point3d(0, 0, 1500),
+            cv::Point3d(0, 0, 1000)
     };
 
-    int stepsCount = 3;
     int stepCurrent= 0;
+    int stepsCount = (int) steps.size();
 
     cv::Point3d wishedPosition(steps[0]);
 
     /// ***************************************************************************** CONNECT TO AND CONFIGURE THE DRONE
-    Drone d(DRONE_IP);
-
-    assert(d.isValid());
+    Drone d("10.42.0.10");
     assert(d.connect());
 
     // Waiting for the drone to be ready
@@ -182,6 +184,7 @@ int main(){
             bool chess_board = cv::findChessboardCorners(frame, cv::Size(chess_x, chess_y), corners);
             //cv::cornerSubPix(frame, corners, cv::Size(11,11), cv::Size(-1,-1), cv::TermCriteria)
 
+
             if(chess_board) {
                 /// **************************************************************************** DECORATIONS FOR THE IHM
                 /*for(int i = 0; i < corners.size(); ++i){
@@ -286,9 +289,12 @@ int main(){
 
                     if(askedDx == 0 and askedDy == 0){
                         ++stepCurrent;
-                        if(stepCurrent >= stepsCount){
-                            std::cout << "ALL WAYPOINTS REACHED: LAND" << std::endl;
-                            d.land();
+                        if(stepCurrent >= stepsCount) {
+                            std::cout << "ALL WAYPOINTS REACHED" << std::endl;
+                            if (LAND_AFTER_LAST_WAYPOINT) {
+                                std::cout << "ALL WAYPOINTS LAND" << std::endl;
+                                d.land();
+                            }
                         }else {
                             std::cout << "WAYPOINT " << stepCurrent << "/" << stepsCount << " REACHED" << std::endl;
                             wishedPosition = steps[stepCurrent];

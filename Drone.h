@@ -179,6 +179,37 @@ public:
      */
     float getMaxRotationSpeed();
 
+    /**
+     * Get the last roll value received from the drone (expect the value to change 5 times per second)
+     * @return Roll value in degrees
+     */
+    float getRoll();
+    /**
+     * Get the last pitch value received from the drone (expect the value to change 5 times per second)
+     * @return Pitch value in degrees
+     */
+    float getPitch();
+    /**
+     * Get the last yaw value received from the drone (expect the value to change 5 times per second)
+     * @return Yaw value in degrees
+     */
+    float getYaw();
+
+    /**
+     * Get the last speedX value received from the drone (expect the value to change 5 times per second)
+     * @return SpeedX value in m/s
+     */
+    float getSpeedX();
+    /**
+     * Get the last speedY value received from the drone (expect the value to change 5 times per second)
+     * @return SpeedY value in m/s
+     */
+    float getSpeedY();
+    /**
+     * Get the last speedZ value received from the drone (expect the value to change 5 times per second)
+     * @return SpeedZ value in m/s
+     */
+    float getSpeedZ();
 
     /// ******************************************************************************************************* COMMANDS
     /**

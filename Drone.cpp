@@ -505,6 +505,29 @@ std::string Drone::getVideoPath() {
     return _file_name;
 }
 
+float Drone::getRoll() {
+    return _roll;
+}
+
+float Drone::getPitch() {
+    return _pitch;
+}
+
+float Drone::getYaw() {
+    return _yaw;
+}
+
+float Drone::getSpeedX() {
+    return _speedX;
+}
+
+float Drone::getSpeedY() {
+    return _speedY;
+}
+
+float Drone::getSpeedZ() {
+    return _speedZ;
+}
 /// ********************************************************************************************************** PROTECTED
 /**
  * STATIC
