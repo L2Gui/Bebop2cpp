@@ -22,5 +22,5 @@ add_executable(streamDemo streamDemo.cpp)
 target_link_libraries(streamDemo arsal ardiscovery arcontroller arnetwork arcommands arnetworkal)
 target_link_libraries(streamDemo ${OpenCV_LIBS})
 
-//TODO add lines for tuto1.cpp bellow
+#TODO add lines for tuto1.cpp bellow
 
