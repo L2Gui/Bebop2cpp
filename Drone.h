@@ -14,7 +14,6 @@ extern "C" {
 #include <atomic>
 #include <iostream>
 
-
 #include <opencv/cv.hpp>
 
 #define FIFO_DIR_PATTERN "/tmp/arsdk_XXXXXX"
@@ -196,6 +195,11 @@ public:
     float getYaw();
 
     /**
+     * Get the last values of the gyroscope received from the drone (expect the value to change 5 times per second)
+     * @return a cv::Point3f as (Roll, Pitch, Yaw), all in degrees
+     */
+    cv::Point3f getGyro();
+    /**
      * Get the last speedX value received from the drone (expect the value to change 5 times per second)
      * @return SpeedX value in m/s
      */
@@ -210,6 +214,12 @@ public:
      * @return SpeedZ value in m/s
      */
     float getSpeedZ();
+
+    /**
+     * Get the last values of the accelerometer received from the drone (expect the value to change 5 times per second)
+     * @return a cv::Point3f as (speedX, speedY, speedZ), all in m/s
+     */
+    cv::Point3f getAccelero();
 
     /// ******************************************************************************************************* COMMANDS
     /**
@@ -372,10 +382,12 @@ private:
     std::atomic<float> _speedX;
     std::atomic<float> _speedY;
     std::atomic<float> _speedZ;
+    std::atomic_flag _lockGyro;
 
     std::atomic<double> _latitude;
     std::atomic<double> _longitude;
     std::atomic<double> _altitude;
+    std::atomic_flag _lockAccelero;
 
     std::atomic<float> _roll;
     std::atomic<float> _pitch;

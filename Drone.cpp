@@ -30,6 +30,8 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
     bool failed = false;
     ARDISCOVERY_Device_t *device = NULL;
     eARCONTROLLER_ERROR error = ARCONTROLLER_OK;
+    _lockGyro.clear();
+    _lockAccelero.clear();
 
 
     if (mkdtemp(_file_dir_name) == NULL)
@@ -516,6 +518,12 @@ float Drone::getPitch() {
 float Drone::getYaw() {
     return _yaw;
 }
+cv::Point3f Drone::getGyro() {
+    while(_lockGyro.test_and_set(std::memory_order_acquire)); // spinlock
+    cv::Point3f res(_roll, _pitch, _yaw);
+    _lockGyro.clear(std::memory_order_release);
+    return res;
+}
 
 float Drone::getSpeedX() {
     return _speedX;
@@ -527,6 +535,12 @@ float Drone::getSpeedY() {
 
 float Drone::getSpeedZ() {
     return _speedZ;
+}
+cv::Point3f Drone::getAccelero() {
+    while(_lockAccelero.test_and_set(std::memory_order_acquire)); // spinlock
+    cv::Point3f res(_speedX, _speedY, _speedZ);
+    _lockAccelero.clear(std::memory_order_release);
+    return res;
 }
 /// ********************************************************************************************************** PROTECTED
 /**
@@ -874,6 +888,7 @@ void Drone::cmdSpeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDiction
     HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
     if (element != NULL)
     {
+        while(_lockAccelero.test_and_set(std::memory_order_acquire));
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_SPEEDCHANGED_SPEEDX, arg);
         if (arg != NULL)
         {
@@ -890,6 +905,7 @@ void Drone::cmdSpeedChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t* elementDiction
         {
             _speedZ.store(arg->value.Float);
         }
+        _lockAccelero.clear(std::memory_order_release);
     }
 }
 
@@ -899,6 +915,9 @@ void Drone::cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDict
     HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
     if (element != NULL)
     {
+        while(_lockGyro.test_and_set(std::memory_order_acquire));
+        //std::cout << "LOCK >" << std::endl;
+        //NB: roll pitch yaw are all received at the same time
         HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_ATTITUDECHANGED_ROLL, arg);
         if (arg != NULL)
         {
@@ -917,6 +936,8 @@ void Drone::cmdAttitudeChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDict
             _yaw.store(arg->value.Float);
             //std::cout << "yaw " << arg->value.Float << std::endl;
         }
+        _lockGyro.clear(std::memory_order_release);
+        //std::cout << "< /LOCK" << std::endl;
     }
 }
 

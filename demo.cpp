@@ -77,7 +77,7 @@ int main(){
     cv::Point3d wishedPosition(steps[0]);
 
     /// ***************************************************************************** CONNECT TO AND CONFIGURE THE DRONE
-    Drone d("10.42.0.10");
+    Drone d;//("10.42.0.11");
     assert(d.connect());
 
     // Waiting for the drone to be ready
@@ -170,15 +170,11 @@ int main(){
         cap >> tmp;
         if(tmp.data != NULL) {
 
-            // We only want the last image, so we drop the previous ones. Ugly but works fine.
-            while (1) {
-                if(tmp.data != NULL) {
-                    tmp.copyTo(frame);
-                }else{
-                    break;
-                }
+            // We only want the last image, so we drop the previous ones.
+            do {
+                tmp.copyTo(frame);
                 cap >> tmp;
-            }
+            }while(tmp.data != NULL);
 
             std::vector<cv::Point2d> corners;
             bool chess_board = cv::findChessboardCorners(frame, cv::Size(chess_x, chess_y), corners);
