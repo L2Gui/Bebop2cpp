@@ -102,11 +102,7 @@ int main(){
 
 
     // Initialising the openCV camera
-    cv::VideoCapture cap(d.getVideoPath());
-    while(!cap.isOpened()){
-        sleep(1);
-        cap = cv::VideoCapture(d.getVideoPath());
-    }
+    d.blockingInitCam();
 
     /// *********************************** VIDEO ANALYSIS INITIALISATION. TODO SHOULD BE INSIDE A METHOD OF DRONE CLASS
 
@@ -155,7 +151,6 @@ int main(){
     cv::Point3d distFromWished(0,0,0);
     cv::Point3d dist(0,0,0);
 
-    cv::Mat tmp;
     cv::Mat frame;
 
     bool FOLLOW = false;    // if TRUE, the drone will follow the chessboard
@@ -167,14 +162,8 @@ int main(){
     cv::namedWindow(DRONE_IP);
     while(proceed)
     {
-        cap >> tmp;
-        if(tmp.data != NULL) {
-
-            // We only want the last image, so we drop the previous ones.
-            do {
-                tmp.copyTo(frame);
-                cap >> tmp;
-            }while(tmp.data != NULL);
+        frame = d.retrieveLastFrame();
+        if(frame.data != NULL) {
 
             std::vector<cv::Point2d> corners;
             bool chess_board = cv::findChessboardCorners(frame, cv::Size(chess_x, chess_y), corners);

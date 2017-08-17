@@ -1199,3 +1199,28 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
 /**/
     return ARCONTROLLER_OK;
 }
+
+void Drone::blockingInitCam() {
+    //Not pretty
+    _camera = cv::VideoCapture(_file_name);
+    while(!_camera.isOpened()){
+        sleep(1);
+        _camera = cv::VideoCapture(_file_name);
+    }
+}
+
+cv::Mat Drone::retrieveLastFrame() {
+    //Not pretty
+    cv::Mat tmp, frame;
+    _camera >> tmp;
+    if(tmp.data == NULL) {
+        return tmp;
+    }
+    // We only want the last image, so we drop the previous ones.
+    do {
+        tmp.copyTo(frame);
+        _camera >> tmp;
+    }while(tmp.data != NULL);
+
+    return frame;
+}

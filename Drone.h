@@ -308,6 +308,18 @@ public:
      * @return true if the straming is started, false otherwise
      */
     bool startStreaming();
+
+    /**
+     * Initialise the camera computer-side
+     * @warning blocking function
+     */
+    void blockingInitCam();
+
+    /**
+     * Recover last frame or an empty frame if latest frame has already been retrieved
+     * @return cv::Mat
+     */
+    cv::Mat retrieveLastFrame();
     /**
      * Stops streaming
      * @warning the function is blocking, it will only return once the drone actually stopped the stream or encountered
@@ -394,6 +406,8 @@ private:
     std::atomic<float> _yaw;
 
     std::atomic<bool> _trimLock;
+
+    cv::VideoCapture _camera;
 
     int frameNb = 0;
     ARSAL_Sem_t _stateSem;
