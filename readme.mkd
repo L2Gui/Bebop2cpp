@@ -30,3 +30,5 @@ NB: with the video @480p (856*480) uncompressed with 1o = 1 pixel, it is about 0
 and with the video @720p (~1284*720) uncompressed with 1o= 1pixel, it is about 0.92Mo.
 
 Even if it is indeed compressed, intuitively, it should not saturate with debug + video@480p (need experimentation). 
+
+--> 100Hz pas plus !

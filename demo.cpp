@@ -89,7 +89,7 @@ int main(){
 
     std::cout << "INITIALISATION IS OK" << std::endl;
 
-    assert(d.startStreaming());
+    assert(d.blockingStartStreaming());
     std::cout << "STREAMING IS OK" << std::endl;
 
     // Flat trim at start. The drone MUST be on the ground at that time

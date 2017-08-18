@@ -229,7 +229,7 @@ public:
     bool takeOff();
     /**
      * Give to the drone the order to take off.
-     * @warning this function is blocking, it will only return when the drone actually took of
+     * @warning this function is blocking, it will only returns when the drone actually took of
      * @return true if the order was well sent and the drone actually took off, false otherwise
      */
     bool blockingTakeOff();
@@ -241,7 +241,7 @@ public:
 
     /**
      * Give to the drone the order to land.
-     * @warning this function is blocking, it will only return when the drone actually landed
+     * @warning this function is blocking, it will only returns when the drone actually landed
      * @return true if the order was well sent and the drone actually landed, false otherwise
      */
     bool blockingLand();
@@ -302,15 +302,15 @@ public:
      */
     bool rotateCamera(float tilt, float pan);
     /**
-     * Starts streaming
-     * @warning the function is blocking, it will only return once the drone actually started the stream or encountered
+     * Send the drone the order to start streaming
+     * @warning the function is blocking, it will only returns once the drone actually started the stream or encountered
      * an issue.
      * @return true if the straming is started, false otherwise
      */
-    bool startStreaming();
+    bool blockingStartStreaming();
 
     /**
-     * Initialise the camera computer-side
+     * Initialise the camera computer-side (please call blockingStartStreaming fisrt)
      * @warning blocking function
      */
     void blockingInitCam();
@@ -322,7 +322,7 @@ public:
     cv::Mat retrieveLastFrame();
     /**
      * Stops streaming
-     * @warning the function is blocking, it will only return once the drone actually stopped the stream or encountered
+     * @warning the function is blocking, it will only returns once the drone actually stopped the stream or encountered
      * an issue.
      * @return true if the straming is stropped, false otherwise
      */
@@ -338,7 +338,7 @@ public:
 
     /**
      * Execute a flat trim if the drone is in landed state.
-     * @warning the function is blocking, it will only return once the drone executed the flat trim of if the drone is
+     * @warning the function is blocking, it will only returns once the drone executed the flat trim of if the drone is
      * not in landing state.
      * @return true if a flat trim was successfully executed. False otherwise
      */

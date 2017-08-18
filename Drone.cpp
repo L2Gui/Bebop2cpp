@@ -255,8 +255,8 @@ bool Drone::blockingTakeOff(){
     }
     if(error == ARCONTROLLER_OK){
         while(
-                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING) &&
-                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING));
+                (_flyingState != ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING) &&
+                (_flyingState != ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING));
         return true;
     }
     return false;
@@ -277,8 +277,8 @@ bool Drone::blockingLand(){
     }
     if(error == ARCONTROLLER_OK){
         while(
-                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED) &&
-                (!_flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_EMERGENCY_LANDING));
+                (_flyingState != ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED) &&
+                (_flyingState != ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_EMERGENCY_LANDING));
         return true;
     }
     return false;
@@ -364,7 +364,7 @@ bool Drone::rotateCamera(float tilt, float pan){
 }
 
 
-bool Drone::startStreaming() {
+bool Drone::blockingStartStreaming() {
     _deviceController->aRDrone3->sendMediaStreamingVideoEnable(_deviceController->aRDrone3, 1);
 
     while(!isStreaming() && !errorStream());
