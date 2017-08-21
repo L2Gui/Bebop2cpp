@@ -59,6 +59,10 @@ int main(int argc, char *argv){
    //     cv::Mat frame(300, 400, 0);
         //cv::Mat frame = d.retrieveLastFrame();
 
+        d.blockingTakeOff();
+        d.moveBy(1,0,0,0);
+
+
         while(proceed) {
             cv::Mat frame = d.retrieveLastFrame();
             if(frame.empty() == true){
@@ -77,6 +81,7 @@ int main(int argc, char *argv){
         ////////////////
 
         d.stopStreaming();
+        d.blockingLand();
     }
     else {
         return 1;
