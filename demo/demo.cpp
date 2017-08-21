@@ -12,6 +12,7 @@
 #define DRONE_MAX_HORIZONTAL_SPEED  0.3
 #define DRONE_MAX_VERTICAL_SPEED    0.3
 #define LAND_AFTER_LAST_WAYPOINT    true
+#define CALIBRATION_FILE            "res/calib_bd2.xml"
 
 /*
  * UTILITY FUNCTIONS
@@ -109,7 +110,7 @@ int main(){
     /// *********************************** VIDEO ANALYSIS INITIALISATION. TODO SHOULD BE INSIDE A METHOD OF DRONE CLASS
 
     // Camera calibration file
-    cv::FileStorage fs("calib_bd2.xml", cv::FileStorage::READ);
+    cv::FileStorage fs(CALIBRATION_FILE, cv::FileStorage::READ);
 
     if(!fs.isOpened()){
         std::cout << "Can't open calibration file!" << std::endl;
