@@ -722,6 +722,10 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             break;
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSTATE_FLATTRIMCHANGED:
             d->cmdFlatTreamChangedRcv();
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_SPEEDSETTINGSSTATE_HULLPROTECTIONCHANGED:
+            d->cmdHullProtectionPresenceChanged(elementDictionary);
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEOAUTORECORDCHANGED:
+            d->cmdAutorecordModeChanged(elementDictionary);
         default:
             break;
     }
@@ -1025,6 +1029,38 @@ void Drone::cmdVideoResolutionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elem
         }
     }
 }
+void Drone::cmdHullProtectionPresenceChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t * elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_SPEEDSETTINGSSTATE_HULLPROTECTIONCHANGED_PRESENT, arg);
+        if (arg != NULL)
+        {
+            _hullProtectionPresence = (bool)arg->value.U8;
+        }
+    }
+}
+
+void Drone::cmdAutorecordModeChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t * elementDictionary){
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEOAUTORECORDCHANGED_ENABLED, arg);
+        if (arg != NULL)
+        {
+            _autorecordEnabled = (bool)arg->value.U8;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEOAUTORECORDCHANGED_MASS_STORAGE_ID, arg);
+        if (arg != NULL)
+        {
+            _autorecordStorageId = arg->value.U8;
+        }
+    }
+}
 
 void Drone::cmdFlatTreamChangedRcv(){
     _trimLock.store(false);
@@ -1223,4 +1259,40 @@ cv::Mat Drone::retrieveLastFrame() {
     }while(tmp.data != NULL);
 
     return frame;
+}
+
+bool Drone::setHullPresence(bool isPresent) {
+
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendSpeedSettingsHullProtection(
+            _deviceController->aRDrone3,
+            (uint8_t)isPresent
+    );
+
+
+    return error == ARCONTROLLER_OK;
+}
+
+bool Drone::isHullProtectionOn() {
+    return _hullProtectionPresence;
+}
+
+bool Drone::setVideoAutorecord(bool autoRecord, uint8_t storageId) {
+
+    eARCONTROLLER_ERROR error = _deviceController->aRDrone3->sendPictureSettingsVideoAutorecordSelection(
+            _deviceController->aRDrone3,
+            (uint8_t)autoRecord,
+            (uint8_t)storageId
+    );
+
+
+
+    return error == ARCONTROLLER_OK;
+}
+
+bool Drone::isVideoAutorecordOn() {
+    return _autorecordEnabled;
+}
+
+uint8_t Drone::getAutorecordStorageId() {
+    return _autorecordStorageId;
 }

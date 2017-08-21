@@ -100,6 +100,8 @@ int main(){
         return 1;
     }
 
+    assert(d.setHullPresence(false));
+    assert(d.setVideoAutorecord(false));
 
     // Initialising the openCV camera
     d.blockingInitCam();

@@ -120,7 +120,7 @@ public:
     bool errorStream();
 
 
-    /// *************************************************************************************************** DRONE LIMITS
+    /// ********************************************************************************** DRONE LIMITS & CONFIGURATIONS
 
     /**
      * Set the max altitude the drone can reach
@@ -178,6 +178,28 @@ public:
      */
     float getMaxRotationSpeed();
 
+    /**
+     * Set the presence of the hull protection. Helps with the onboard computations
+     * @param isPresent
+     * @return true if the command was well sent, false otherwise
+     */
+    bool setHullPresence(bool isPresent);
+
+    /**
+     * Returns the current knowledge regarding the hull protection of the drone
+     * @return true if the drone thinks the hull protection is present, false otherwise
+     */
+    bool isHullProtectionOn();
+
+    /**
+     * Execute a flat trim if the drone is in landed state.
+     * @warning the function is blocking, it will only returns once the drone executed the flat trim of if the drone is
+     * not in landing state.
+     * @return true if a flat trim was successfully executed. False otherwise
+     */
+    bool blockingFlatTrim();
+
+    /// ************************************************************************************************ NAVDATA GETTERS
     /**
      * Get the last roll value received from the drone (expect the value to change 5 times per second)
      * @return Roll value in degrees
@@ -293,6 +315,7 @@ public:
      */
     bool moveBy(float dX, float dY, float dZ, float dPsi);
 
+    /// ************************************************************************************************** CAMERA STUFFS
 
     /**
      * Rotate the camera
@@ -310,7 +333,7 @@ public:
     bool blockingStartStreaming();
 
     /**
-     * Initialise the camera computer-side (please call blockingStartStreaming fisrt)
+     * Initialise the camera computer-side (please call blockingStartStreaming first or the function won't return)
      * @warning blocking function
      */
     void blockingInitCam();
@@ -337,12 +360,26 @@ public:
     std::string getVideoPath();
 
     /**
-     * Execute a flat trim if the drone is in landed state.
-     * @warning the function is blocking, it will only returns once the drone executed the flat trim of if the drone is
-     * not in landing state.
-     * @return true if a flat trim was successfully executed. False otherwise
+     * Set the video autorecord mode
+     * If true, the video will be recorded automatically when the drone takes off and stopped after landing
+     * @warning if using autorecord with the blackbox navdata, memory might be full in no time
+     * @param autoRecord
+     * @param storageId storageID on the drone, default is 0
+     * @return true if command was successfully send, false otherwise
      */
-    bool blockingFlatTrim();
+    bool setVideoAutorecord(bool autoRecord, uint8_t storageId = 0);
+
+    /**
+     * Get the video autorecord status
+     * @return true if the autorecord mode is set, false otherwise
+     */
+    bool isVideoAutorecordOn();
+
+    /**
+     * Get the video autorecord storage id (relevent only if autorecord mode is set)
+     * @return storageId
+     */
+    uint8_t getAutorecordStorageId();
 
 protected:
     /// *********************************************************************************** RETRIEVE DATA FROM THE DRONE
@@ -363,6 +400,11 @@ protected:
     void cmdRelativeMovementChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
 
     void cmdVideoResolutionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+    void cmdHullProtectionPresenceChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+    void cmdAutorecordModeChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
     void cmdFlatTreamChangedRcv();
 
     /// ********************************************************************************************* DIRTY CAMERA STUFF
@@ -407,6 +449,8 @@ private:
 
     std::atomic<bool> _trimLock;
 
+    std::atomic<bool> _hullProtectionPresence;
+
     cv::VideoCapture _camera;
 
     int frameNb = 0;
@@ -421,14 +465,10 @@ private:
     FILE* _videoOut = NULL;
     int _d2cPort;
     int _c2dPort;
-    /*
-    ARNETWORKAL_Manager_t *_alManager;
-    ARNETWORK_Manager_t *_netManager;
-    ARSAL_Thread_t _rxThread;
-    ARSAL_Thread_t _txThread;
-    ARSAL_Thread_t _videoTxThread;
-    ARSAL_Thread_t _videoRxThread;
-    */
+
+    std::atomic<bool> _autorecordEnabled;
+    std::atomic<uint8_t> _autorecordStorageId;
+
     /// ********************************************************************************* STATES RELATED ATTRIBUTES ****
     //eARCONTROLLER_ERROR error;
     eARCONTROLLER_DEVICE_STATE _deviceState;
