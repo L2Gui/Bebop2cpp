@@ -25,7 +25,8 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
         _ip(ipAddress),
         _discoveryPort(discoveryPort),
         _c2dPort(c2dPort),
-        _d2cPort(d2cPort)
+        _d2cPort(d2cPort),
+        _usingFullNavdata(false)
 {
     bool failed = false;
     ARDISCOVERY_Device_t *device = NULL;
@@ -1295,4 +1296,26 @@ bool Drone::isVideoAutorecordOn() {
 
 uint8_t Drone::getAutorecordStorageId() {
     return _autorecordStorageId;
+}
+
+std::string Drone::getIpAddress() {
+    return _ip;
+}
+
+void Drone::useFullNavdata() {
+    if(not _usingFullNavdata) {
+        try{
+            _navdata.init(_ip);
+            _navdata.startReceive();
+            _usingFullNavdata = true;
+        }
+        catch(const boost::system::system_error &e)
+        {
+            ARSAL_PRINT(ARSAL_PRINT_WARNING, "TODO", "Full navdata not available.");
+        }
+    }
+}
+
+bool Drone::isUsingFullNavdata() {
+    return _usingFullNavdata;
 }

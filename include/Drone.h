@@ -15,6 +15,7 @@ extern "C" {
 #include <iostream>
 
 #include <opencv/cv.hpp>
+#include <fullnavdata.h>
 
 #define FIFO_DIR_PATTERN "/tmp/arsdk_XXXXXX"
 #define FIFO_NAME "arsdk_fifo"
@@ -123,6 +124,11 @@ public:
     /// ********************************************************************************** DRONE LIMITS & CONFIGURATIONS
 
     /**
+     * Get the Ip address of the drone
+     * @return the ip address
+     */
+    std::string getIpAddress();
+    /**
      * Set the max altitude the drone can reach
      * @param value in meters
      * @return true if the command was well sent, false otherwise
@@ -200,6 +206,17 @@ public:
     bool blockingFlatTrim();
 
     /// ************************************************************************************************ NAVDATA GETTERS
+
+    /**
+     * Start using full navdata instead of Parrot 5Hz and limited navdata
+     */
+    void useFullNavdata();
+
+    /**
+     * Returns true if full navdata are used for that drone, false otherwise
+     * @return true or false
+     */
+    bool isUsingFullNavdata();
     /**
      * Get the last roll value received from the drone (expect the value to change 5 times per second)
      * @return Roll value in degrees
@@ -465,6 +482,9 @@ private:
     FILE* _videoOut = NULL;
     int _d2cPort;
     int _c2dPort;
+
+    fullnavdata _navdata;
+    std::atomic<bool> _usingFullNavdata;
 
     std::atomic<bool> _autorecordEnabled;
     std::atomic<uint8_t> _autorecordStorageId;

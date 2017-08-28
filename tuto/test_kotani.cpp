@@ -68,8 +68,11 @@ int main(int argc, char *argv){
             if(frame.empty() == true){
                 continue;
             }
-            cv::imshow("tuto1", frame);
 
+
+            //1
+
+            cv::imshow("tuto1", frame);
             char k = (char) cv::waitKey(10);
             switch (k) {
                 case 'q':

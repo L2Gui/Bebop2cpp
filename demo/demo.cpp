@@ -1,6 +1,8 @@
 #include <vector>
 #include "Drone.h"
 #include <math.h>
+#include <boost/asio/io_service.hpp>
+#include <fullnavdata.h>
 
 
 /*
@@ -13,6 +15,7 @@
 #define DRONE_MAX_VERTICAL_SPEED    0.3
 #define LAND_AFTER_LAST_WAYPOINT    true
 #define CALIBRATION_FILE            "res/calib_bd2.xml"
+#define HULLPROTECTIONON            false
 
 /*
  * UTILITY FUNCTIONS
@@ -84,6 +87,8 @@ int main(){
     // Waiting for the drone to be ready
     while(!d.isRunning()){ sleep(1); }
 
+    std::string droneIp = d.getIpAddress();
+
     assert(d.setMaxAltitude(DRONE_MAX_ALTITUDE));
     assert(d.setMaxHorizontalSpeed(DRONE_MAX_HORIZONTAL_SPEED));
     assert(d.setMaxVerticalSpeed(DRONE_MAX_VERTICAL_SPEED));
@@ -101,7 +106,7 @@ int main(){
         return 1;
     }
 
-    assert(d.setHullPresence(false));
+    assert(d.setHullPresence(HULLPROTECTIONON));
     assert(d.setVideoAutorecord(false));
 
     // Initialising the openCV camera
@@ -162,7 +167,19 @@ int main(){
 
     double camTilt, prevCamTilt = INT_MAX/2;
 
-    cv::namedWindow(DRONE_IP);
+    cv::namedWindow(droneIp);
+
+    /** **/
+    std::cout << "GO NAVDATA" << std::endl;
+    d.useFullNavdata();
+    std::cout << "YATA" << std::endl;
+/*
+    while(1){
+        sleep(1);
+    }
+    return 0;
+*/
+    /** **/
     while(proceed)
     {
         frame = d.retrieveLastFrame();
@@ -197,6 +214,7 @@ int main(){
 
                 cv::Mat camPos = rotM.t() * tvec;
                 camPos *= unit;
+
                 dist.x = camPos.at<double>(0,0);
                 dist.y = camPos.at<double>(1,0);
                 dist.z = camPos.at<double>(2,0);
@@ -319,7 +337,7 @@ int main(){
                         cv::QT_FONT_NORMAL, 1, cv::Scalar(255, 0, 255), 3, 8);
 
 
-            cv::imshow(DRONE_IP, frame);
+            cv::imshow(droneIp, frame);
         }
 
 
