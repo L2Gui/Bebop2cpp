@@ -210,7 +210,7 @@ public:
     /**
      * Start using full navdata instead of Parrot 5Hz and limited navdata
      */
-    void useFullNavdata();
+    bool useFullNavdata();
 
     /**
      * Returns true if full navdata are used for that drone, false otherwise
@@ -398,6 +398,7 @@ public:
      */
     uint8_t getAutorecordStorageId();
 
+    fullnavdata _navdata;
 protected:
     /// *********************************************************************************** RETRIEVE DATA FROM THE DRONE
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);
@@ -483,7 +484,7 @@ private:
     int _d2cPort;
     int _c2dPort;
 
-    fullnavdata _navdata;
+    //fullnavdata _navdata;
     std::atomic<bool> _usingFullNavdata;
 
     std::atomic<bool> _autorecordEnabled;

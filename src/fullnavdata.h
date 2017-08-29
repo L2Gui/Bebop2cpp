@@ -10,30 +10,53 @@
 #include <boost/thread.hpp>
 #include <deque>
 
-class Gnuplot;
+#include <Eigen/Dense>
 
 #define FULL_NAVDATA_MAX_SIZE 4096
 #define FULL_NAVDATA_DATASIZE 8
 
-const int FULL_NAVDATA_PORT	= 56789;
+const int FULL_NAVDATA_DEFAULT_PORT	= 56789;
+
+class Gnuplot;
+
 
 class fullnavdata
 {
 public:
     fullnavdata();
-    void init(std::string ip);
+    void init(std::string ip, int senderPort= FULL_NAVDATA_DEFAULT_PORT);
 
     void startReceive();
 
-    ~fullnavdata();
+    bool receivedData();
 
+    Eigen::Vector3f get_accelerometer_raw() const;
+    Eigen::Vector3f get_gyroscope_raw() const;
+    float get_height_ultrasonic() const;
+    Eigen::Vector3f get_speed() const;
+
+    void lock();
+    void release();
 
 private:
-    std::deque<double> _acceX, _acceY, _acceZ;
-    std::deque<double> _gyroX, _gyroY, _gyroZ;
 
+    std::atomic_flag _spinlock;
+
+    Eigen::Vector3f _accelerometer_raw;
+    Eigen::Vector3f _gyroscope_raw;
+    std::atomic<float> _height_ultrasonic;
+    Eigen::Vector3f _speed;
+
+
+    /*******/
+
+    std::deque<double> lolx;
+    std::deque<double> loly;
+    std::deque<double> lolz;
     Gnuplot* _accelerometerPlot;
-    Gnuplot* _gyroPlot;
+    //Gnuplot* _gyroPlot;
+
+    /***********/
 
     void navdataPacketReceived(const boost::system::error_code &error, std::size_t bytes_transferred);
 

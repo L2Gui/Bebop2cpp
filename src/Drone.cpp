@@ -1302,20 +1302,37 @@ std::string Drone::getIpAddress() {
     return _ip;
 }
 
-void Drone::useFullNavdata() {
+bool Drone::useFullNavdata() {
     if(not _usingFullNavdata) {
+
         try{
-            _navdata.init(_ip);
-            _navdata.startReceive();
-            _usingFullNavdata = true;
+            _navdata.init(_ip, FULL_NAVDATA_DEFAULT_PORT);
         }
         catch(const boost::system::system_error &e)
         {
-            ARSAL_PRINT(ARSAL_PRINT_WARNING, "TODO", "Full navdata not available.");
+            ARSAL_PRINT(ARSAL_PRINT_WARNING, "TODO",
+                        "Bind on port %d failed, trying random port",
+                        FULL_NAVDATA_DEFAULT_PORT
+            );
+
+            try{
+                _navdata.init(_ip, 0);
+            }
+            catch(const boost::system::system_error &e)
+            {
+                std::cout<<e.what()<<std::endl;
+                ARSAL_PRINT(ARSAL_PRINT_WARNING, "TODO",
+                            "Bind on random port failed. Full navdata is not available"
+                );
+            }
         }
+
+
+        _navdata.startReceive();
+        return true;
     }
 }
 
 bool Drone::isUsingFullNavdata() {
-    return _usingFullNavdata;
+    return _navdata.receivedData();
 }

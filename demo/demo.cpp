@@ -3,6 +3,8 @@
 #include <math.h>
 #include <boost/asio/io_service.hpp>
 #include <fullnavdata.h>
+#include <gnuplot_iostream.h>
+#include <deque>
 
 
 /*
@@ -171,8 +173,43 @@ int main(){
 
     /** **/
     std::cout << "GO NAVDATA" << std::endl;
-    d.useFullNavdata();
+    Eigen::initParallel();
+    assert(d.useFullNavdata());
+    sleep(1);
+    assert(d.isUsingFullNavdata());
     std::cout << "YATA" << std::endl;
+
+    Gnuplot gp;
+    gp << "set title \"LIGNE\"\n";
+    std::deque<float> lolx;
+    std::deque<float> loly;
+    std::deque<float> lolz;
+    Eigen::Vector3f vec;
+    while(1){
+        if(lolx.size() > 150){
+            lolx.pop_front();
+            loly.pop_front();
+            lolz.pop_front();
+        }
+
+        vec = d._navdata.get_gyroscope_raw();
+
+
+        lolx.push_back(vec(0));
+        loly.push_back(vec(1));
+        lolz.push_back(vec(2));
+
+        gp << "plot '-' binary" << gp.binFmt1d(lolx, "array") << "with lines title \"acce_x\",";
+        gp << "'-' binary" << gp.binFmt1d(loly, "array") << "with lines title \"acce_y\",";
+        gp << "'-' binary" << gp.binFmt1d(lolz, "array") << "with lines title \"acce_z\"\n";
+        gp.sendBinary1d(lolx);
+        gp.sendBinary1d(loly);
+        gp.sendBinary1d(lolz);
+        gp.flush();
+
+        usleep(10000);
+    }
+
 /*
     while(1){
         sleep(1);

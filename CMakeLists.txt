@@ -11,6 +11,8 @@ include_directories(res)
 find_package(OpenCV REQUIRED)
 find_package(Boost COMPONENTS iostreams system filesystem log thread chrono date_time timer REQUIRED)
 # iostreams just for gnuplot
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIR})
 
 add_library(libbebop2
         src/Drone.cpp

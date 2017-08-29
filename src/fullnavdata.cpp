@@ -13,23 +13,30 @@
 using boost::asio::ip::udp;
 
 fullnavdata::fullnavdata()
-    :_accelerometerPlot(new Gnuplot()),
-     _gyroPlot(new Gnuplot())
+    :_spinlock(ATOMIC_FLAG_INIT)
 {
-    *_accelerometerPlot << "set title \"Accelerometer (m/s^2)\"\n";
-    *_gyroPlot << "set title \"Gyroscope (rad/s)\"\n";
+    _accelerometerPlot = new Gnuplot();
+
+    *_accelerometerPlot << "set title \"VRAI\"\n";
+
 }
 
-void fullnavdata::init(std::string ip)
+void fullnavdata::init(std::string ip, int senderPort)
 {
     std::cout << "INIT" << std::endl;
     _navdata_socket.reset(new udp::socket(_ioService, udp::v4()));
-    _navdata_socket->bind(udp::endpoint(udp::v4(), FULL_NAVDATA_PORT));
+    _navdata_socket->bind(udp::endpoint(udp::v4(), senderPort));
+    std::cout << "bind ok" << std::endl;
+
 
     udp::resolver resolver(_ioService);
-    udp::resolver::query query(ip, std::to_string(FULL_NAVDATA_PORT));
+    udp::resolver::query query(ip, std::to_string(FULL_NAVDATA_DEFAULT_PORT));
+
+    std::cout << "resolving " << query.host_name() << ":" << query.service_name() << std::endl;
+
     endpoint = *resolver.resolve(query);
     //lol
+    std::cout << "sending to " << endpoint.address() << ":" << endpoint.protocol().protocol() << std::endl;
 
     size_t sent = _navdata_socket->send_to(boost::asio::buffer("hello"), endpoint);
 
@@ -63,12 +70,13 @@ void fullnavdata::init(std::string ip)
 
 void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, size_t bytes_transferred)
 {
+    while(_spinlock.test_and_set(std::memory_order_acquire));
+
+    _gotNavdata = true;
     if(bytes_transferred < 1000)
     {
         return;
     }
-
-    _gotNavdata = true;
 
     /*
     double pitch;
@@ -90,6 +98,8 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
     double gps_num_svs;
     double gps_eph, gps_epv;
     */
+
+    //warning: data type size must not be over 8 bytes
     double sensor_acc_raw_x_m_s2;
     double sensor_acc_raw_y_m_s2;
     double sensor_acc_raw_z_m_s2;
@@ -100,26 +110,9 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 
     double sensor_ultrasound_height_m;
 
-    /*std::vector<std::pair<double *, int>> data_table = { // Firmware 3.2
-            {&roll, 61},
-            {&pitch, 62},
-            {&yaw, 63},
-            {&height, 76},
-            {&height_ultrasonic, 15},
-            {&pressure, 9},
-            {&vbat, 58},
-            {&latitude, 22},
-            {&longitude, 23},
-            {&gps_altitude, 24},
-            {&bat_percent, 59},
-            {&speed_x, 73},
-            {&speed_y, 74},
-            {&speed_z, 75},
-            {&gps_accuracy, 27},
-            {&gps_num_svs, 28},
-            {&gps_eph, 32},
-            {&gps_epv, 34}
-    };*/
+    double speed_body_x_m_s;
+    double speed_body_y_m_s;
+    double speed_body_z_m_s;
 
     std::vector<std::pair<double *, int>> data_table = { // Firmware 4.0.6
             {&sensor_acc_raw_x_m_s2, 1240},
@@ -130,86 +123,89 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
             {&sensor_gyro_raw_y_rad_s, 1360},
             {&sensor_gyro_raw_z_rad_s, 1368},
 
-            {&sensor_ultrasound_height_m, 1424}
+            {&sensor_ultrasound_height_m, 1424},
+
+            {&speed_body_x_m_s, 1520},
+            {&speed_body_y_m_s, 1528},
+            {&speed_body_z_m_s, 1536}
 
     };
-    for(const std::pair<double *, int> &element : data_table)
-    {
-        memcpy(element.first, _navdata_buf.data() + element.second, FULL_NAVDATA_DATASIZE);
-    }
-/*
-    _navdata.altitude = height;
-    _navdata.attitude = Eigen::Vector3f(pitch, roll, yaw);
-    _navdata.batterystatus = bat_percent / 100.0f;
-    _navdata.full = true;
-    _navdata.gps_altitude = gps_altitude;
-    _navdata.gps_sats = gps_num_svs;
-    _navdata.latitude = latitude;
-    _navdata.linearvelocity = Eigen::Vector3f(speed_x, speed_y, speed_z);
-    _navdata.longitude = longitude;
 
-    _navdata.full_navdata.ultrasound_height = height_ultrasonic;
-    _navdata.full_navdata.pressure = pressure;
-    _navdata.full_navdata.vbat = vbat;
-    _navdata.full_navdata.gps_accuracy = gps_accuracy;
-    _navdata.full_navdata.gps_eph = gps_eph;
-    _navdata.full_navdata.gps_epv = gps_epv;
+/*
+    float f;
+    memcpy(&f,
+           _navdata_buf.data() + 1240 + FULL_NAVDATA_DATASIZE - (sizeof(float)),
+           FULL_NAVDATA_DATASIZE - (sizeof(float)));
+
 */
 
-    if(_acceX.size() > 150){
-        _acceX.pop_front();
-        _acceY.pop_front();
-        _acceZ.pop_front();
-        _gyroX.pop_front();
-        _gyroY.pop_front();
-        _gyroZ.pop_front();
+    double x;
+    memcpy(&x,
+           _navdata_buf.data() + 1240 + FULL_NAVDATA_DATASIZE,
+           FULL_NAVDATA_DATASIZE);
+    double y;
+    memcpy(&y,
+           _navdata_buf.data() + 1248 + FULL_NAVDATA_DATASIZE,
+           FULL_NAVDATA_DATASIZE);
+    double z;
+    memcpy(&z,
+           _navdata_buf.data() + 1256 + FULL_NAVDATA_DATASIZE,
+           FULL_NAVDATA_DATASIZE);
+
+    for(const std::pair<double *, int> &element : data_table)
+    {
+        memcpy(
+                element.first,
+                _navdata_buf.data() + element.second + FULL_NAVDATA_DATASIZE,
+                FULL_NAVDATA_DATASIZE
+        );
+    }
+    _accelerometer_raw = Eigen::Vector3f(
+            (float)sensor_acc_raw_x_m_s2,
+            (float)sensor_acc_raw_y_m_s2,
+            (float)sensor_acc_raw_z_m_s2
+    );
+
+    float mdr = _accelerometer_raw(0);
+
+    _gyroscope_raw = Eigen::Vector3f(
+            (float)sensor_gyro_raw_x_rad_s,
+            (float)sensor_gyro_raw_y_rad_s,
+            (float)sensor_gyro_raw_z_rad_s
+    );
+
+    _speed = Eigen::Vector3f(
+            (float)speed_body_x_m_s,
+            (float)speed_body_y_m_s,
+            (float)speed_body_z_m_s
+    );
+
+/******************/
+    if(lolx.size() > 150){
+        lolx.pop_front();
+        loly.pop_front();
+        lolz.pop_front();
     }
 
-    _acceX.push_back(sensor_acc_raw_x_m_s2);
-    _acceY.push_back(sensor_acc_raw_y_m_s2);
-    _acceZ.push_back(sensor_acc_raw_z_m_s2);
 
-    _gyroX.push_back(sensor_gyro_raw_x_rad_s);
-    _gyroY.push_back(sensor_gyro_raw_y_rad_s);
-    _gyroZ.push_back(sensor_gyro_raw_z_rad_s);
+    lolx.push_back(sensor_acc_raw_x_m_s2);
+    loly.push_back(sensor_acc_raw_y_m_s2);
+    lolz.push_back(sensor_acc_raw_z_m_s2);
 
-    /*
-    _g->reset_all();
+    (*_accelerometerPlot) << "plot '-' binary" << (*_accelerometerPlot).binFmt1d(lolx, "array") << "with lines title \"acce_x\",";
+    (*_accelerometerPlot) << "'-' binary" << (*_accelerometerPlot).binFmt1d(loly, "array") << "with lines title \"acce_y\",";
+    (*_accelerometerPlot) << "'-' binary" << (*_accelerometerPlot).binFmt1d(lolz, "array") << "with lines title \"acce_z\"\n";
+    (*_accelerometerPlot).sendBinary1d(lolx);
+    (*_accelerometerPlot).sendBinary1d(loly);
+    (*_accelerometerPlot).sendBinary1d(lolz);
+    (*_accelerometerPlot).flush();
 
-    _g->plot_x(_x, "acce x");
-    _g->plot_x(_y, "acce y");
-    _g->plot_x(_z, "acce z");
-    */
-
-    /************/
-
-    //gp << "set yrange [-1:1]\n";
+        /************/
 
 
 
-    *_accelerometerPlot << "plot '-' binary" << _accelerometerPlot->binFmt1d(_acceX, "array") << "with lines title \"acce_x\",";
-    *_accelerometerPlot << "'-' binary" << _accelerometerPlot->binFmt1d(_acceY, "array") << "with lines title \"acce_y\",";
-    *_accelerometerPlot << "'-' binary" << _accelerometerPlot->binFmt1d(_acceZ, "array") << "with lines title \"acce_z\"\n";
-    _accelerometerPlot->sendBinary1d(_acceX);
-    _accelerometerPlot->sendBinary1d(_acceY);
-    _accelerometerPlot->sendBinary1d(_acceZ);
-    _accelerometerPlot->flush();
-
-
-
-    *_gyroPlot << "plot '-' binary" << _gyroPlot->binFmt1d(_gyroX, "array") << "with lines title \"gyro_x\",";
-    *_gyroPlot << "'-' binary" << _gyroPlot->binFmt1d(_gyroY, "array") << "with lines title \"gyro_y\",";
-    *_gyroPlot << "'-' binary" << _gyroPlot->binFmt1d(_gyroZ, "array") << "with lines title \"gyro_z\"\n";
-    _gyroPlot->sendBinary1d(_gyroX);
-    _gyroPlot->sendBinary1d(_gyroY);
-    _gyroPlot->sendBinary1d(_gyroZ);
-    _gyroPlot->flush();
-
-        /***********************/
-
-
-    //std::cout << sensor_ultrasound_height_m << std::endl;
     // Listen for next packet
+    _spinlock.clear(std::memory_order_release);
     _navdata_socket->async_receive_from(boost::asio::buffer(_navdata_buf), _navdata_sender_endpoint, boost::bind(&fullnavdata::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
@@ -223,21 +219,33 @@ void fullnavdata::startReceive() {
         _updater = new boost::thread(&fullnavdata::runUpdateLoop, this);
     }
 }
-
-fullnavdata::~fullnavdata() {
-    delete _accelerometerPlot;
+/// ****** LOCKER
+void fullnavdata::lock(){
+    while(_spinlock.test_and_set(std::memory_order_acquire));
 }
-/*
-shared_ptr<navdata> fullnavdata::getNavdata()
-{
-    if(!_gotNavdata)
-    {
-        return nullptr;
-    }
 
-    shared_ptr<navdata> navdata = make_shared<bebop::navdata>();
+void fullnavdata::release(){
+    _spinlock.clear(std::memory_order_release);
+}
 
-    *navdata = _navdata; // Copy local navdata
+/// ****** GETTERS
 
-    return navdata;
-}*/
+bool fullnavdata::receivedData() {
+    return _gotNavdata;
+}
+
+Eigen::Vector3f fullnavdata::get_accelerometer_raw() const {
+    return _accelerometer_raw;
+}
+
+Eigen::Vector3f fullnavdata::get_gyroscope_raw() const {
+    return _gyroscope_raw;
+}
+
+float fullnavdata::get_height_ultrasonic() const {
+    return _height_ultrasonic;
+}
+
+Eigen::Vector3f fullnavdata::get_speed() const {
+    return _speed;
+}
