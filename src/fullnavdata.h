@@ -31,9 +31,15 @@ public:
     bool receivedData();
 
     Eigen::Vector3f get_accelerometer_raw() const;
+
     Eigen::Vector3f get_gyroscope_raw() const;
+    Eigen::Vector3f get_magnetometer_raw() const;
+    Eigen::Vector3f get_gyroscope_filt() const;
+
     float get_height_ultrasonic() const;
-    Eigen::Vector3f get_speed() const;
+
+    Eigen::Vector3f get_body_speed() const;
+    Eigen::Vector3f get_test() const;
 
     void lock();
     void release();
@@ -44,19 +50,12 @@ private:
 
     Eigen::Vector3f _accelerometer_raw;
     Eigen::Vector3f _gyroscope_raw;
+    Eigen::Vector3f _magnetometer_raw;
+    Eigen::Vector3f _gyroscope_filt;
     std::atomic<float> _height_ultrasonic;
-    Eigen::Vector3f _speed;
+    Eigen::Vector3f _body_speed;
+    Eigen::Vector3f _test;
 
-
-    /*******/
-
-    std::deque<double> lolx;
-    std::deque<double> loly;
-    std::deque<double> lolz;
-    Gnuplot* _accelerometerPlot;
-    //Gnuplot* _gyroPlot;
-
-    /***********/
 
     void navdataPacketReceived(const boost::system::error_code &error, std::size_t bytes_transferred);
 

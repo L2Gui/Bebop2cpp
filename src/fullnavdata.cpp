@@ -15,10 +15,6 @@ using boost::asio::ip::udp;
 fullnavdata::fullnavdata()
     :_spinlock(ATOMIC_FLAG_INIT)
 {
-    _accelerometerPlot = new Gnuplot();
-
-    *_accelerometerPlot << "set title \"VRAI\"\n";
-
 }
 
 void fullnavdata::init(std::string ip, int senderPort)
@@ -72,6 +68,7 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 {
     while(_spinlock.test_and_set(std::memory_order_acquire));
 
+    std::cout <<"doot"<< std::endl;
     _gotNavdata = true;
     if(bytes_transferred < 1000)
     {
@@ -108,55 +105,72 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
     double sensor_gyro_raw_y_rad_s;
     double sensor_gyro_raw_z_rad_s;
 
+    double sensor_mag_raw_x_mG;
+    double sensor_mag_raw_y_mG;
+    double sensor_mag_raw_z_mG;
+
+    double gyro_filt_x_rad_s;
+    double gyro_filt_y_rad_s;
+    double gyro_filt_z_rad_s;
+
     double sensor_ultrasound_height_m;
 
     double speed_body_x_m_s;
     double speed_body_y_m_s;
     double speed_body_z_m_s;
 
+    double test_x;
+    double test_y;
+    double test_z;
+
+
+    int one = 1496; //speed_ned_ref_x
+
     std::vector<std::pair<double *, int>> data_table = { // Firmware 4.0.6
-            {&sensor_acc_raw_x_m_s2, 1240},
-            {&sensor_acc_raw_y_m_s2, 1248},
-            {&sensor_acc_raw_z_m_s2, 1256},
+            {&sensor_acc_raw_x_m_s2, 1240},         //ok
+            {&sensor_acc_raw_y_m_s2, 1248},         //ok
+            {&sensor_acc_raw_z_m_s2, 1256},         //ok
 
-            {&sensor_gyro_raw_x_rad_s, 1352},
-            {&sensor_gyro_raw_y_rad_s, 1360},
-            {&sensor_gyro_raw_z_rad_s, 1368},
+            {&sensor_gyro_raw_x_rad_s, 1520},       //ok
+            {&sensor_gyro_raw_y_rad_s, 1528},       //ok
+            {&sensor_gyro_raw_z_rad_s, 1536},       //ok
 
-            {&sensor_ultrasound_height_m, 1424},
+            {&sensor_mag_raw_x_mG, 1392},
+            {&sensor_mag_raw_y_mG, 1400},
+            {&sensor_mag_raw_z_mG, 1408},
 
-            {&speed_body_x_m_s, 1520},
-            {&speed_body_y_m_s, 1528},
-            {&speed_body_z_m_s, 1536}
+            {&gyro_filt_x_rad_s, 632},              //ok
+            {&gyro_filt_y_rad_s, 640},              //ok
+            {&gyro_filt_z_rad_s, 648},              //ok
+
+            {&sensor_ultrasound_height_m, 1424},    //ok
+
+            {&speed_body_x_m_s, 1520},              //ok
+            {&speed_body_y_m_s, 1528},              //ok
+            {&speed_body_z_m_s, 1536},              //ok
+
+            {&test_x, one},
+            {&test_y, one+FULL_NAVDATA_DATASIZE},
+            {&test_z, one+(2*FULL_NAVDATA_DATASIZE)}
 
     };
 
 /*
-    float f;
-    memcpy(&f,
-           _navdata_buf.data() + 1240 + FULL_NAVDATA_DATASIZE - (sizeof(float)),
-           FULL_NAVDATA_DATASIZE - (sizeof(float)));
+    double d;
+    memcpy(&d, _navdata_buf.data() + 1440, FULL_NAVDATA_DATASIZE);
 
+    double t;
+    memcpy(&t, _navdata_buf.data() + 1336, FULL_NAVDATA_DATASIZE);
+
+    int64_t tt;
+    memcpy(&tt, _navdata_buf.data() + 1336, FULL_NAVDATA_DATASIZE);
 */
-
-    double x;
-    memcpy(&x,
-           _navdata_buf.data() + 1240 + FULL_NAVDATA_DATASIZE,
-           FULL_NAVDATA_DATASIZE);
-    double y;
-    memcpy(&y,
-           _navdata_buf.data() + 1248 + FULL_NAVDATA_DATASIZE,
-           FULL_NAVDATA_DATASIZE);
-    double z;
-    memcpy(&z,
-           _navdata_buf.data() + 1256 + FULL_NAVDATA_DATASIZE,
-           FULL_NAVDATA_DATASIZE);
 
     for(const std::pair<double *, int> &element : data_table)
     {
         memcpy(
                 element.first,
-                _navdata_buf.data() + element.second + FULL_NAVDATA_DATASIZE,
+                _navdata_buf.data() + element.second,
                 FULL_NAVDATA_DATASIZE
         );
     }
@@ -166,43 +180,36 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
             (float)sensor_acc_raw_z_m_s2
     );
 
-    float mdr = _accelerometer_raw(0);
-
     _gyroscope_raw = Eigen::Vector3f(
             (float)sensor_gyro_raw_x_rad_s,
             (float)sensor_gyro_raw_y_rad_s,
             (float)sensor_gyro_raw_z_rad_s
     );
+    _magnetometer_raw = Eigen::Vector3f(
+            (float)sensor_mag_raw_x_mG,
+            (float)sensor_mag_raw_y_mG,
+            (float)sensor_mag_raw_z_mG
+    );
+    _gyroscope_filt = Eigen::Vector3f(
+            (float)gyro_filt_x_rad_s,
+            (float)gyro_filt_y_rad_s,
+            (float)gyro_filt_z_rad_s
+    );
 
-    _speed = Eigen::Vector3f(
+    _test = Eigen::Vector3f(
+            (float)test_x,
+            (float)test_y,
+            (float)test_z
+    );
+
+    _body_speed = Eigen::Vector3f(
             (float)speed_body_x_m_s,
             (float)speed_body_y_m_s,
             (float)speed_body_z_m_s
     );
 
-/******************/
-    if(lolx.size() > 150){
-        lolx.pop_front();
-        loly.pop_front();
-        lolz.pop_front();
-    }
 
-
-    lolx.push_back(sensor_acc_raw_x_m_s2);
-    loly.push_back(sensor_acc_raw_y_m_s2);
-    lolz.push_back(sensor_acc_raw_z_m_s2);
-
-    (*_accelerometerPlot) << "plot '-' binary" << (*_accelerometerPlot).binFmt1d(lolx, "array") << "with lines title \"acce_x\",";
-    (*_accelerometerPlot) << "'-' binary" << (*_accelerometerPlot).binFmt1d(loly, "array") << "with lines title \"acce_y\",";
-    (*_accelerometerPlot) << "'-' binary" << (*_accelerometerPlot).binFmt1d(lolz, "array") << "with lines title \"acce_z\"\n";
-    (*_accelerometerPlot).sendBinary1d(lolx);
-    (*_accelerometerPlot).sendBinary1d(loly);
-    (*_accelerometerPlot).sendBinary1d(lolz);
-    (*_accelerometerPlot).flush();
-
-        /************/
-
-
+    _height_ultrasonic = (float) sensor_ultrasound_height_m;
 
     // Listen for next packet
     _spinlock.clear(std::memory_order_release);
@@ -246,6 +253,18 @@ float fullnavdata::get_height_ultrasonic() const {
     return _height_ultrasonic;
 }
 
-Eigen::Vector3f fullnavdata::get_speed() const {
-    return _speed;
+Eigen::Vector3f fullnavdata::get_body_speed() const {
+    return _body_speed;
+}
+
+Eigen::Vector3f fullnavdata::get_magnetometer_raw() const {
+    return _magnetometer_raw;
+}
+
+Eigen::Vector3f fullnavdata::get_gyroscope_filt() const {
+    return _gyroscope_filt;
+}
+
+Eigen::Vector3f fullnavdata::get_test() const {
+    return _test;
 }
