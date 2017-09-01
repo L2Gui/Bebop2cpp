@@ -68,7 +68,6 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 {
     while(_spinlock.test_and_set(std::memory_order_acquire));
 
-    std::cout <<"doot"<< std::endl;
     _gotNavdata = true;
     if(bytes_transferred < 1000)
     {
