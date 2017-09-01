@@ -14,6 +14,8 @@ find_package(Boost COMPONENTS iostreams system filesystem log thread chrono date
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
+configure_file(res/calib_bd2.xml ${CMAKE_BINARY_DIR}/res/calib_bd2.xml COPYONLY)
+
 add_library(libbebop2
         src/Drone.cpp
         src/fullnavdata.cpp
@@ -29,6 +31,13 @@ target_link_libraries(libbebop2 arsal ardiscovery arcontroller arnetwork arcomma
 #executables
 add_executable(demo demo/demo.cpp)
 target_link_libraries(demo libbebop2)
+
+add_executable(videoDisplay demo/videoDisplay.cpp)
+target_link_libraries(videoDisplay libbebop2)
+
+
+add_executable(fullNavData demo/fullNavData.cpp)
+target_link_libraries(fullNavData libbebop2)
 
 add_executable(test_kotani tuto/test_kotani.cpp)
 target_link_libraries(test_kotani libbebop2)
