@@ -123,16 +123,16 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
     double test_z;
 
 
-    int one = 1496; //speed_ned_ref_x
+    int one = 16; //speed_ned_ref_x
 
     std::vector<std::pair<double *, int>> data_table = { // Firmware 4.0.6
             {&sensor_acc_raw_x_m_s2, 1240},         //ok
             {&sensor_acc_raw_y_m_s2, 1248},         //ok
             {&sensor_acc_raw_z_m_s2, 1256},         //ok
 
-            {&sensor_gyro_raw_x_rad_s, 1520},       //ok
-            {&sensor_gyro_raw_y_rad_s, 1528},       //ok
-            {&sensor_gyro_raw_z_rad_s, 1536},       //ok
+            {&sensor_gyro_raw_x_rad_s, 1352},       //ok
+            {&sensor_gyro_raw_y_rad_s, 1360},       //ok
+            {&sensor_gyro_raw_z_rad_s, 1368},       //ok
 
             {&sensor_mag_raw_x_mG, 1392},
             {&sensor_mag_raw_y_mG, 1400},
