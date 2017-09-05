@@ -201,7 +201,8 @@ int main(){
 
         gp3.flush();
 */
-        usleep(100000);
+        // 100Hz
+        usleep(25 * 1000);
     }
 
     return 0;
