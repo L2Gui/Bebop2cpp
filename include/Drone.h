@@ -134,6 +134,9 @@ public:
      * @return true if the command was well sent, false otherwise
      */
     bool setMaxAltitude(float value);
+
+    //TODO setTime?
+
     /**
      * Get the max altitude the drone can reach
      * @return the value, in meters

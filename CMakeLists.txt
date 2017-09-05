@@ -35,9 +35,13 @@ target_link_libraries(demo libbebop2)
 add_executable(videoDisplay demo/videoDisplay.cpp)
 target_link_libraries(videoDisplay libbebop2)
 
+add_executable(fullNavDataOne demo/fullNavData_one.cpp)
+target_link_libraries(fullNavDataOne libbebop2)
 
-add_executable(fullNavData demo/fullNavData.cpp)
-target_link_libraries(fullNavData libbebop2)
+add_executable(fullNavDataTwo demo/fullNavData_two.cpp)
+target_link_libraries(fullNavDataTwo libbebop2)
+
+
 
 add_executable(test_kotani tuto/test_kotani.cpp)
 target_link_libraries(test_kotani libbebop2)
