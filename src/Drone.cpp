@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Drone.h"
-
+#include "fullnavdata.h"
 
 /**
  * Some more define to clean out
@@ -26,7 +26,8 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
         _discoveryPort(discoveryPort),
         _c2dPort(c2dPort),
         _d2cPort(d2cPort),
-        _usingFullNavdata(false)
+        _usingFullNavdata(false),
+        _navdata(new fullnavdata())
 {
     bool failed = false;
     ARDISCOVERY_Device_t *device = NULL;
@@ -107,6 +108,7 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
         {
             ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- delete discovey device ... ");
             ARDISCOVERY_Device_Delete (&device);
+
         }
     }
 
@@ -133,7 +135,7 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
             failed = 1;
         }
     }
-
+/*  // NEEDED FOR OLDER SDK VERSIONS
     if(!failed){
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "- set arcommands decoder ... ");
         eARCOMMANDS_DECODER_ERROR decError = ARCOMMANDS_DECODER_OK;
@@ -141,7 +143,7 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
 
         //ARCOMMANDS_Decoder_SetARDrone3PilotingStateSpeedChangedCb(_deviceController.)
     }
-
+*/
 
 
     // add the frame received callback to be informed when a streaming frame has been received from the device
@@ -167,27 +169,29 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
 
 
 Drone::~Drone() {
-    if(_deviceController != NULL and !isStopped()){
+    if(_deviceController != NULL and _isConnected and !isStopped()) {
         ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Disconnecting ...");
 
-        eARCONTROLLER_ERROR error = ARCONTROLLER_Device_Stop (_deviceController);
+        eARCONTROLLER_ERROR error = ARCONTROLLER_Device_Stop(_deviceController);
 
-        if (error == ARCONTROLLER_OK)
-        {
+        if (error == ARCONTROLLER_OK) {
             // wait state update update
-            ARSAL_Sem_Wait (&(_stateSem));
+            ARSAL_Sem_Wait(&(_stateSem));
         }
+    }
 
-        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "ARCONTROLLER_Device_Delete ...");
-        ARCONTROLLER_Device_Delete (&_deviceController);
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "ARCONTROLLER_Device_Delete ...");
+    ARCONTROLLER_Device_Delete (&_deviceController);
 
+    ARSAL_Sem_Destroy (&(_stateSem));
 
-        ARSAL_Sem_Destroy (&(_stateSem));
+    unlink(_file_name);
+    rmdir(_file_dir_name);
 
-        unlink(_file_name);
-        rmdir(_file_dir_name);
+    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Drone successfully destroyed");
 
-        ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "Drone successfully destroyed");
+    if(_navdata != NULL){
+        delete _navdata;
     }
 }
 
@@ -1306,7 +1310,7 @@ bool Drone::useFullNavdata() {
     if(not _usingFullNavdata) {
 
         try{
-            _navdata.init(_ip, FULL_NAVDATA_DEFAULT_PORT);
+            _navdata->init(_ip, FULL_NAVDATA_DEFAULT_PORT);
         }
         catch(const boost::system::system_error &e)
         {
@@ -1316,7 +1320,7 @@ bool Drone::useFullNavdata() {
             );
 
             try{
-                _navdata.init(_ip, 0);
+                _navdata->init(_ip, 0);
             }
             catch(const boost::system::system_error &e)
             {
@@ -1328,11 +1332,11 @@ bool Drone::useFullNavdata() {
         }
 
 
-        _navdata.startReceive();
+        _navdata->startReceive();
         return true;
     }
 }
 
 bool Drone::isUsingFullNavdata() {
-    return _navdata.receivedData();
+    return _navdata->receivedData();
 }

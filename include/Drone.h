@@ -15,7 +15,6 @@ extern "C" {
 #include <iostream>
 
 #include <opencv/cv.hpp>
-#include <fullnavdata.h>
 
 #define FIFO_DIR_PATTERN "/tmp/arsdk_XXXXXX"
 #define FIFO_NAME "arsdk_fifo"
@@ -28,6 +27,7 @@ extern "C" {
 #define BEBOP_DEFAULT_C2D_PORT 54321 // should be read from Json
 #define BEBOP_DEFAULT_D2C_PORT 43210
 
+class fullnavdata;
 /**
  * DRONE RELEVANT DOCUMENTATION
  * http://developer.parrot.com/docs/reference/all
@@ -401,7 +401,7 @@ public:
      */
     uint8_t getAutorecordStorageId();
 
-    fullnavdata _navdata;
+    fullnavdata* _navdata;
 protected:
     /// *********************************************************************************** RETRIEVE DATA FROM THE DRONE
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);

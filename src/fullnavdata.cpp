@@ -17,6 +17,14 @@ fullnavdata::fullnavdata()
 {
 }
 
+fullnavdata::~fullnavdata() {
+    if(_updater != NULL){
+        _ioService.stop();
+        delete _updater;
+    }
+}
+
+
 void fullnavdata::init(std::string ip, int senderPort)
 {
     std::cout << "INIT" << std::endl;

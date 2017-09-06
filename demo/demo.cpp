@@ -252,7 +252,7 @@ int main(){
             }
 */
         //    d._navdata.lock();
-            vec = d._navdata.get_gyroscope_filt();
+            vec = d._navdata->get_gyroscope_filt();
       //      vec2 = d._navdata.get_body_speed();
     //        d._navdata.release();
 
@@ -525,11 +525,11 @@ int main(){
                 break;
 
             case 'w':
-                d._navdata.lock();
+                d._navdata->lock();
                 std::cout << "data locked" << std::endl;
                 break;
             case 'x':
-                d._navdata.release();
+                d._navdata->release();
                 std::cout << "data released" << std::endl;
                 break;
             default:

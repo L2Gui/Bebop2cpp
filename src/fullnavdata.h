@@ -24,6 +24,7 @@ class fullnavdata
 {
 public:
     fullnavdata();
+    ~fullnavdata();
     void init(std::string ip, int senderPort= FULL_NAVDATA_DEFAULT_PORT);
 
     void startReceive();
