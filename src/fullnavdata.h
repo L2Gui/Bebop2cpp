@@ -25,6 +25,11 @@ class fullnavdata
 public:
     fullnavdata();
     ~fullnavdata();
+
+    //fullnavdata class can't be copied! there is only 1 physical drone associated with an instance
+    fullnavdata(fullnavdata const &) = delete;
+    void operator=(fullnavdata const &fullnavdata) = delete;
+
     void init(std::string ip, int senderPort= FULL_NAVDATA_DEFAULT_PORT);
 
     void startReceive();
