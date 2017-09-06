@@ -20,15 +20,15 @@ const int FULL_NAVDATA_DEFAULT_PORT	= 56789;
 class Gnuplot;
 
 
-class fullnavdata
+class Fullnavdata
 {
 public:
-    fullnavdata();
-    ~fullnavdata();
+    Fullnavdata();
+    ~Fullnavdata();
 
-    //fullnavdata class can't be copied! there is only 1 physical drone associated with an instance
-    fullnavdata(fullnavdata const &) = delete;
-    void operator=(fullnavdata const &fullnavdata) = delete;
+    //Fullnavdata class can't be copied! there is only 1 physical drone associated with an instance
+    Fullnavdata(Fullnavdata const &) = delete;
+    void operator=(Fullnavdata const &fullnavdata) = delete;
 
     void init(std::string ip, int senderPort= FULL_NAVDATA_DEFAULT_PORT);
 

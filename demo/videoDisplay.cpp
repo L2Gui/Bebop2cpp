@@ -2,7 +2,7 @@
 #include "Drone.h"
 #include <math.h>
 #include <boost/asio/io_service.hpp>
-#include <fullnavdata.h>
+#include <Fullnavdata.h>
 #include <gnuplot_iostream.h>
 #include <deque>
 

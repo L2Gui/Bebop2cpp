@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "Drone.h"
-#include "fullnavdata.h"
+#include "Fullnavdata.h"
 
 /**
  * Some more define to clean out
@@ -27,7 +27,7 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
         _c2dPort(c2dPort),
         _d2cPort(d2cPort),
         _usingFullNavdata(false),
-        _navdata(new fullnavdata())
+        _navdata(new Fullnavdata())
 {
     bool failed = false;
     ARDISCOVERY_Device_t *device = NULL;

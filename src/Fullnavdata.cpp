@@ -1,6 +1,6 @@
 /** TODO MIT **/
 
-#include "fullnavdata.h"
+#include "Fullnavdata.h"
 
 #include <vector>
 #include <utility>
@@ -12,12 +12,12 @@
 
 using boost::asio::ip::udp;
 
-fullnavdata::fullnavdata()
+Fullnavdata::Fullnavdata()
     :_spinlock(ATOMIC_FLAG_INIT)
 {
 }
 
-fullnavdata::~fullnavdata() {
+Fullnavdata::~Fullnavdata() {
     if(_updater != NULL){
         _ioService.stop();
         delete _updater;
@@ -25,7 +25,7 @@ fullnavdata::~fullnavdata() {
 }
 
 
-void fullnavdata::init(std::string ip, int senderPort)
+void Fullnavdata::init(std::string ip, int senderPort)
 {
     std::cout << "INIT" << std::endl;
     _navdata_socket.reset(new udp::socket(_ioService, udp::v4()));
@@ -51,7 +51,7 @@ void fullnavdata::init(std::string ip, int senderPort)
     _navdata_socket->async_receive_from(
             boost::asio::buffer(_navdata_buf),
             _navdata_sender_endpoint,
-            boost::bind(&fullnavdata::navdataPacketReceived,
+            boost::bind(&Fullnavdata::navdataPacketReceived,
                         this,
                         boost::asio::placeholders::error,
                         boost::asio::placeholders::bytes_transferred
@@ -72,7 +72,7 @@ void fullnavdata::init(std::string ip, int senderPort)
 }
 
 
-void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, size_t bytes_transferred)
+void Fullnavdata::navdataPacketReceived(const boost::system::error_code &error, size_t bytes_transferred)
 {
     while(_spinlock.test_and_set(std::memory_order_acquire));
 
@@ -220,58 +220,58 @@ void fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 
     // Listen for next packet
     _spinlock.clear(std::memory_order_release);
-    _navdata_socket->async_receive_from(boost::asio::buffer(_navdata_buf), _navdata_sender_endpoint, boost::bind(&fullnavdata::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+    _navdata_socket->async_receive_from(boost::asio::buffer(_navdata_buf), _navdata_sender_endpoint, boost::bind(&Fullnavdata::navdataPacketReceived, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
-void fullnavdata::runUpdateLoop() {
+void Fullnavdata::runUpdateLoop() {
     _ioService.run();
 }
 
 
-void fullnavdata::startReceive() {
+void Fullnavdata::startReceive() {
     if(_updater == nullptr){
-        _updater = new boost::thread(&fullnavdata::runUpdateLoop, this);
+        _updater = new boost::thread(&Fullnavdata::runUpdateLoop, this);
     }
 }
 /// ****** LOCKER
-void fullnavdata::lock(){
+void Fullnavdata::lock(){
     while(_spinlock.test_and_set(std::memory_order_acquire));
 }
 
-void fullnavdata::release(){
+void Fullnavdata::release(){
     _spinlock.clear(std::memory_order_release);
 }
 
 /// ****** GETTERS
 
-bool fullnavdata::receivedData() {
+bool Fullnavdata::receivedData() {
     return _gotNavdata;
 }
 
-Eigen::Vector3f fullnavdata::get_accelerometer_raw() const {
+Eigen::Vector3f Fullnavdata::get_accelerometer_raw() const {
     return _accelerometer_raw;
 }
 
-Eigen::Vector3f fullnavdata::get_gyroscope_raw() const {
+Eigen::Vector3f Fullnavdata::get_gyroscope_raw() const {
     return _gyroscope_raw;
 }
 
-float fullnavdata::get_height_ultrasonic() const {
+float Fullnavdata::get_height_ultrasonic() const {
     return _height_ultrasonic;
 }
 
-Eigen::Vector3f fullnavdata::get_body_speed() const {
+Eigen::Vector3f Fullnavdata::get_body_speed() const {
     return _body_speed;
 }
 
-Eigen::Vector3f fullnavdata::get_magnetometer_raw() const {
+Eigen::Vector3f Fullnavdata::get_magnetometer_raw() const {
     return _magnetometer_raw;
 }
 
-Eigen::Vector3f fullnavdata::get_gyroscope_filt() const {
+Eigen::Vector3f Fullnavdata::get_gyroscope_filt() const {
     return _gyroscope_filt;
 }
 
-Eigen::Vector3f fullnavdata::get_test() const {
+Eigen::Vector3f Fullnavdata::get_test() const {
     return _test;
 }

@@ -27,7 +27,7 @@ extern "C" {
 #define BEBOP_DEFAULT_C2D_PORT 54321 // should be read from Json
 #define BEBOP_DEFAULT_D2C_PORT 43210
 
-class fullnavdata;
+class Fullnavdata;
 /**
  * DRONE RELEVANT DOCUMENTATION
  * http://developer.parrot.com/docs/reference/all
@@ -405,7 +405,7 @@ public:
      */
     uint8_t getAutorecordStorageId();
 
-    fullnavdata* _navdata;
+    Fullnavdata* _navdata;
 protected:
     /// *********************************************************************************** RETRIEVE DATA FROM THE DRONE
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);
@@ -491,7 +491,7 @@ private:
     int _d2cPort;
     int _c2dPort;
 
-    //fullnavdata _navdata;
+    //Fullnavdata _navdata;
     std::atomic<bool> _usingFullNavdata;
 
     std::atomic<bool> _autorecordEnabled;
