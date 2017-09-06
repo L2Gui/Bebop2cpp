@@ -1029,7 +1029,7 @@ void Drone::cmdVideoResolutionChangedRcv(ARCONTROLLER_DICTIONARY_ELEMENT_t *elem
                     std::cout << "STREAM 720" << std::endl;
                     break;
                 default:
-                    std::cout << "AUCUNE IDEE" << std::endl;
+                    std::cout << "SHOULD NOT HAPPEND" << std::endl;
             }
 
         }
@@ -1195,6 +1195,7 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
     Drone* self = (Drone*) drone;
 
     if(frame->isIFrame){
+        //TODO use ffmpeg or something here to decode properly the next frames without the dirty file
         std::cout << "FULL iFrame received" << std::endl;
     }
     //uint8_t data
