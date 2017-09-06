@@ -42,6 +42,10 @@ public:
           unsigned int d2cPort = BEBOP_DEFAULT_D2C_PORT);
     ~Drone();
 
+    //Drone class can't be copied! there is only 1 physical drone associated with an instance
+    Drone(Drone const &) = delete;
+    void operator=(Drone const &Drone) = delete;
+
     /// ************************************************************************************************* GENERAL STATUS
     /**
      * Connect to the drone

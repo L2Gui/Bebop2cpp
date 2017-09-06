@@ -85,6 +85,7 @@ int main(){
 
     /// ***************************************************************************** CONNECT TO AND CONFIGURE THE DRONE
     Drone d;//(DRONE_IP);
+
     assert(d.connect());
 
     // Waiting for the drone to be ready
