@@ -27,7 +27,8 @@ Drone::Drone(const std::string& ipAddress, unsigned int discoveryPort, unsigned 
         _c2dPort(c2dPort),
         _d2cPort(d2cPort),
         _usingFullNavdata(false),
-        _navdata(new Fullnavdata())
+        _navdata(new Fullnavdata()),
+        _spinlock_camera(ATOMIC_FLAG_INIT)
 {
     bool failed = false;
     ARDISCOVERY_Device_t *device = NULL;
@@ -1242,25 +1243,34 @@ eARCONTROLLER_ERROR Drone::didReceiveFrameCallback (ARCONTROLLER_Frame_t *frame,
 }
 
 void Drone::blockingInitCam() {
+
+    while(_spinlock_camera.test_and_set(std::memory_order_acquire));
     //Not pretty
     _camera = cv::VideoCapture(_file_name);
     while(!_camera.isOpened()){
         sleep(1);
         _camera = cv::VideoCapture(_file_name);
     }
+    _spinlock_camera.clear(std::memory_order_release);
 }
 
 cv::Mat Drone::retrieveLastFrame() {
     //Not pretty
     cv::Mat tmp, frame;
+
+    while(_spinlock_camera.test_and_set(std::memory_order_acquire));
     _camera >> tmp;
+    _spinlock_camera.clear(std::memory_order_release);
+
     if(tmp.data == NULL) {
         return tmp;
     }
     // We only want the last image, so we drop the previous ones.
     do {
         tmp.copyTo(frame);
+        while(_spinlock_camera.test_and_set(std::memory_order_acquire));
         _camera >> tmp;
+        _spinlock_camera.clear(std::memory_order_release);
     }while(tmp.data != NULL);
 
     return frame;

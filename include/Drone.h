@@ -477,6 +477,7 @@ private:
     std::atomic<bool> _hullProtectionPresence;
 
     cv::VideoCapture _camera;
+    std::atomic_flag _spinlock_camera;
 
     int frameNb = 0;
     ARSAL_Sem_t _stateSem;
