@@ -15,6 +15,7 @@ safe_run(){
     return $ret
 }
 
+BLDC_Test_Bench -M 1 > /dev/null 2>&1
 
 NAVDATAFOLDER="/data/ftp/internal_000/navdataserver/"
 
@@ -71,6 +72,6 @@ safe_run "chmod +x $navdataserver_path"
 
 echo "-- done"
 
-BLDC_Test_Bench -M 1 > /dev/null 2>&1
+BLDC_Test_Bench -M 2 > /dev/null 2>&1
 
 echo -e "\n\nPlease reboot your drone\n\n"

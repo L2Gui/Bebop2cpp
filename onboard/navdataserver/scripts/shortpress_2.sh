@@ -4,7 +4,7 @@
 TAG=WifiSwap
 ESSID=NWLdrone
 DEFAULT_WIFI_SETUP=/sbin/broadcom_setup.sh
-IP=10.42.0.10
+IP=10.42.0.11
 GW=10.42.0.1
 NETMASK=255.255.255.0
 
