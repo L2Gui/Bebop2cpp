@@ -433,7 +433,11 @@ bool Drone::setMaxRotationSpeed(float value) {
     return error == ARCONTROLLER_OK;
 }
 
-
+bool Drone::setMaxTilt(float value) {
+    _deviceController->aRDrone3->sendPilotingSettingsMaxTilt(
+            _deviceController->aRDrone3,
+            value);
+}
 
 /*
 bool Drone::startStreamingEXPL()
@@ -549,6 +553,38 @@ cv::Point3f Drone::getAccelero() {
     _lockAccelero.clear(std::memory_order_release);
     return res;
 }
+
+
+float Drone::getMaxAltitude() const {
+    return _max_altitude;
+}
+float Drone::getMaxVerticalSpeed() const {
+    return _max_vertical_speed;
+}
+
+float Drone::getMaxHorizontalSpeed() const {
+    return _max_horizontal_speed;
+}
+float Drone::getMaxRotationSpeed() const {
+    return _max_rotation_speed;
+}
+
+float Drone::getMaxTilt() const {
+    return _max_tilt;
+}
+float Drone::getMinTilt() const {
+    return _min_tilt;
+}
+
+float Drone::getMaxPan() const {
+    return _max_pan;
+}
+
+float Drone::getMinPan() const {
+    return _min_pan;
+}
+
+
 /// ********************************************************************************************************** PROTECTED
 /**
  * STATIC
@@ -567,30 +603,10 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
     if(elementDictionary == NULL)
         return;
 
-    /***************************** SHOULD BE WRAPPED INSIDE PRIVATE METHODS */
-    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED) && (elementDictionary != NULL))
-    {
-        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
-        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
-        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
-        if (element != NULL)
-        {
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED_SOFTWARE, arg);
-            if (arg != NULL)
-            {
-                char * software = arg->value.String;
-                std::cout << "SOFTWARE " << software << std::endl;
-            }
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED_HARDWARE, arg);
-            if (arg != NULL)
-            {
-                char * hardware = arg->value.String;
-                std::cout << "hardware " << hardware << std::endl;
-            }
-        }
-    }
+    /***************************** TODO SHOULD BE WRAPPED INSIDE PRIVATE METHODS IF NEEDED */
+    /*
     // DEPRECATED BUT WORKS
-    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATION) && (elementDictionary != NULL))
+    if (commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_ORIENTATION)
     {
         ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
         ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
@@ -633,47 +649,12 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             }
         }
     }
+    */
 
-    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED) && (elementDictionary != NULL))
+    /*
+    if (commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2)
     {
-        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
-        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
-        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
-        if (element != NULL)
-        {
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_FOV, arg);
-            if (arg != NULL)
-            {
-                float fov = arg->value.Float;
-            }
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMAX, arg);
-            if (arg != NULL)
-            {
-                float panMax = arg->value.Float;
-            }
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMIN, arg);
-            if (arg != NULL)
-            {
-                float panMin = arg->value.Float;
-            }
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMAX, arg);
-            if (arg != NULL)
-            {
-                float tiltMax = arg->value.Float;
-                std::cout << "NEW TILT MAX" << tiltMax << std::endl;
-            }
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMIN, arg);
-            if (arg != NULL)
-            {
-                float tiltMin = arg->value.Float;
-                std::cout << "NEW TILT MIN" << tiltMin << std::endl;
-            }
-        }
-    }
-
-    if ((commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2) && (elementDictionary != NULL))
-    {
-        std::cout << "doot ****************************************" << std::endl;
+        std::cout << "******************** NEVER CALLED" << std::endl;
         ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
         ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
         HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
@@ -692,7 +673,8 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             }
         }
     }
-    /************************* SHOULD BE WRAPPED INSIDE PRIVATE METHODS */
+     */
+    /************************* SHOULD BE WRAPPED INSIDE PRIVATE METHODS IF NEEDED */
 
     // if the command received is a battery state changed
     switch(commandKey) {
@@ -721,7 +703,6 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             d->cmdMagnetoCalibrationNeedChangedRcv(elementDictionary);
             break;
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGEVENT_MOVEBYEND:
-            //std::cout << "OOOOOOOOOOOK" << std::endl;
             d->cmdRelativeMovementChangedRcv(elementDictionary);
             break;
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEORESOLUTIONSCHANGED:
@@ -733,6 +714,18 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             d->cmdHullProtectionPresenceChanged(elementDictionary);
         case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PICTURESETTINGSSTATE_VIDEOAUTORECORDCHANGED:
             d->cmdAutorecordModeChanged(elementDictionary);
+        case ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED:
+            d->cmdVersionChanged(elementDictionary);
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_MAXALTITUDECHANGED:
+            d->cmdMaxAltitudeChanged(elementDictionary);
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_AUTONOMOUSFLIGHTMAXVERTICALSPEED:
+            d->cmdMaxVerticalSpeedChanged(elementDictionary);
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_AUTONOMOUSFLIGHTMAXHORIZONTALSPEED:
+            d->cmdMaxHorizontalSpeedChanged(elementDictionary);
+        case ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_AUTONOMOUSFLIGHTMAXROTATIONSPEED:
+            d->cmdMaxRotationSpeedChanged(elementDictionary);
+        case ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED:
+            d->cmdCameraSettingsChanged(elementDictionary);
         default:
             break;
     }
@@ -743,22 +736,22 @@ void Drone::stateChanged (eARCONTROLLER_DEVICE_STATE newState,
                           void *drone)
 {
     Drone* d = (Drone*) drone;
-    ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "    - stateChanged newState: %d .....", newState);
 
     switch (newState)
     {
         case ARCONTROLLER_DEVICE_STATE_STOPPED:
             ARSAL_Sem_Post (&(d->_stateSem));
-            //stop
-            std::cout << "I STOPPED... DUNNO WHY." << std::endl;
+            ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "    - stateChanged newState: %d : STOPPED", newState);
 
             break;
 
         case ARCONTROLLER_DEVICE_STATE_RUNNING:
             ARSAL_Sem_Post (&(d->_stateSem));
+            ARSAL_PRINT(ARSAL_PRINT_INFO, TAG, "    - stateChanged newState: %d : RUNNING", newState);
             break;
 
         default:
+            ARSAL_PRINT(ARSAL_PRINT_WARNING, TAG, "    - stateChanged newState: %d : UNKNOWN", newState);
             break;
     }
 
@@ -1109,6 +1102,130 @@ eARCONTROLLER_ERROR Drone::decoderConfigCallback (ARCONTROLLER_Stream_Codec_t co
     return ARCONTROLLER_OK;
 }
 
+void Drone::cmdVersionChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary) {
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED_SOFTWARE, arg);
+        if (arg != NULL)
+        {
+            char * software = arg->value.String;
+            std::cout << "SOFTWARE " << software << std::endl;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_SETTINGSSTATE_PRODUCTVERSIONCHANGED_HARDWARE, arg);
+        if (arg != NULL)
+        {
+            char * hardware = arg->value.String;
+            std::cout << "hardware " << hardware << std::endl;
+        }
+    }
+}
+
+void Drone::cmdMaxAltitudeChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary) {
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        /*
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_MAXALTITUDECHANGED_CURRENT, arg);
+        if (arg != NULL)
+        {
+            float current = arg->value.Float;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_MAXALTITUDECHANGED_MIN, arg);
+        if (arg != NULL)
+        {
+            float min = arg->value.Float;
+        }
+         */
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_MAXALTITUDECHANGED_MAX, arg);
+        if (arg != NULL)
+        {
+            _max_altitude = arg->value.Float;
+        }
+    }
+}
+
+void Drone::cmdMaxVerticalSpeedChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary) {
+
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_AUTONOMOUSFLIGHTMAXVERTICALSPEED_VALUE, arg);
+        if (arg != NULL)
+        {
+            _max_vertical_speed = arg->value.Float;
+        }
+    }
+}
+
+void Drone::cmdMaxHorizontalSpeedChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary) {
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_AUTONOMOUSFLIGHTMAXHORIZONTALSPEED_VALUE, arg);
+        if (arg != NULL)
+        {
+            _max_horizontal_speed = arg->value.Float;
+        }
+    }
+}
+
+void Drone::cmdMaxRotationSpeedChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary) {
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_PILOTINGSETTINGSSTATE_AUTONOMOUSFLIGHTMAXROTATIONSPEED_VALUE, arg);
+        if (arg != NULL)
+        {
+            _max_rotation_speed = arg->value.Float;
+        }
+    }
+}
+
+void Drone::cmdCameraSettingsChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary) {
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_FOV, arg);
+        if (arg != NULL)
+        {
+            float fov = arg->value.Float;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMAX, arg);
+        if (arg != NULL)
+        {
+            _max_pan = arg->value.Float;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_PANMIN, arg);
+        if (arg != NULL)
+        {
+            _min_pan = arg->value.Float;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMAX, arg);
+        if (arg != NULL)
+        {
+            _max_tilt = arg->value.Float;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED_TILTMIN, arg);
+        if (arg != NULL)
+        {
+            _min_tilt = arg->value.Float;
+        }
+    }
+}
+
 /// PRIVATE
 
 /// *************************************************************************************** JSON CONFIG FILE. NOT USED v
@@ -1356,3 +1473,6 @@ bool Drone::isUsingFullNavdata() const{
 Fullnavdata *Drone::getFullNavdata() const {
     return _navdata;
 }
+
+
+

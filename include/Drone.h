@@ -153,14 +153,33 @@ public:
      * @return true if the command was well sent, false otherwise
      */
     bool setMaxTilt(float value);
+    // The parrot sdk seems to not provide a function to set the minTilt
     /**
      * Get the max tilt value
      * @return the value, in degrees
      */
     float getMaxTilt() const;
+    /**
+     * Get the min tilt value
+     * @return the value, in degrees
+     */
+    float getMinTilt() const;
+
+    // The parrot sdk seems to not provide a function to set the maxPan nor the minPan
+    /**
+     * Get the max pan value
+     * @return the value, in degrees
+     */
+    float getMaxPan() const;
+    /**
+     * Get the min pan value
+     * @return the value, in degrees
+     */
+    float getMinPan() const;
 
     /**
-     * Set the max vertical speed
+     * Set the max vertical speed.
+     * This will only be used during autonomous flights such as moveBy.
      * @param value in m/s
      * @return true if the command was well sent, false otherwise
      */
@@ -172,12 +191,18 @@ public:
     float getMaxVerticalSpeed() const;
 
     /**
-     * Set the max horizontal speed
+     * Set the max horizontal speed.
+     * This will only be used during autonomous flights such as moveBy.
      * @param value in m/s
      * @return true if the command was well sent, false otherwise
      */
     bool setMaxHorizontalSpeed(float value);
 
+    /**
+     * Get the max horizontal speed value
+     * @return the value, in m/s
+     */
+    float getMaxHorizontalSpeed() const;
     /**
      * Set the max rotation speed
      * @param value in degrees/s
@@ -429,6 +454,18 @@ protected:
 
     void cmdAutorecordModeChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
 
+    void cmdVersionChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+    void cmdMaxAltitudeChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+    void cmdMaxVerticalSpeedChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+    void cmdMaxHorizontalSpeedChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+    void cmdMaxRotationSpeedChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+
+    void cmdCameraSettingsChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+
+
+
     void cmdFlatTreamChangedRcv();
 
     /// ********************************************************************************************* DIRTY CAMERA STUFF
@@ -475,7 +512,16 @@ private:
 
     std::atomic<bool> _hullProtectionPresence;
 
+    std::atomic<float> _max_altitude;
+    std::atomic<float> _max_vertical_speed;
+    std::atomic<float> _max_horizontal_speed;
+    std::atomic<float> _max_rotation_speed;
+
     cv::VideoCapture _camera;
+    std::atomic<float> _min_tilt;
+    std::atomic<float> _max_tilt;
+    std::atomic<float> _min_pan;
+    std::atomic<float> _max_pan;
     std::atomic_flag _spinlock_camera;
 
     int frameNb = 0;
