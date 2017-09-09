@@ -4,12 +4,13 @@
 
 #include <vector>
 #include <utility>
-#include <boost/log/trivial.hpp>
-#include <boost/bind.hpp>
 #include <iostream>
 #include <chrono>
+#include <memory>
+#include <array>
 
-#include "gnuplot_iostream.h"
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
 
 using boost::asio::ip::udp;
 

@@ -1,13 +1,13 @@
-/** TODO MIT **/
-
 #ifndef BEBOP_FULLNAVDATA_H
 #define BEBOP_FULLNAVDATA_H
 
-#include <array>
-#include <memory>
 
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
+
+namespace boost{
+    class thread;
+}
+
 #include <deque>
 
 #include <Eigen/Dense>
@@ -17,9 +17,6 @@
 #define FULL_NAVDATA_DATASIZE 8
 
 const int FULL_NAVDATA_DEFAULT_PORT	= 56789;
-
-class Gnuplot;
-
 
 class Fullnavdata
 {
