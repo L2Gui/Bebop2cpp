@@ -236,6 +236,20 @@ public:
      */
     bool blockingFlatTrim();
 
+    /**
+     * Gets camera default tilt
+     * Using a deprecated function from arsdk, but V2 is not working
+     * @return camera tilt angle in degrees
+     */
+    float getDefaultTilt() const;
+
+    /**
+     * Gets camera default pan
+     * Using a deprecated function from arsdk, but V2 is not working
+     * @return camera pan angle in degrees
+     */
+    float getDefaultPan() const;
+
     /// ************************************************************************************************ NAVDATA GETTERS
 
     Fullnavdata* getFullNavdata() const;
@@ -463,6 +477,7 @@ protected:
 
 
     void cmdCameraSettingsChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
+    void cmdCameraDefaultOrientationChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary);
 
 
 
@@ -522,7 +537,10 @@ private:
     std::atomic<float> _max_tilt;
     std::atomic<float> _min_pan;
     std::atomic<float> _max_pan;
+    std::atomic<float> _default_tilt;
+    std::atomic<float> _default_pan;
     std::atomic_flag _spinlock_camera;
+
 
     int frameNb = 0;
     ARSAL_Sem_t _stateSem;

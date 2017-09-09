@@ -584,7 +584,13 @@ float Drone::getMinPan() const {
     return _min_pan;
 }
 
+float Drone::getDefaultPan() const{
+    return _default_pan;
+}
 
+float Drone::getDefaultTilt() const{
+    return _default_tilt;
+}
 /// ********************************************************************************************************** PROTECTED
 /**
  * STATIC
@@ -651,29 +657,6 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
     }
     */
 
-    /*
-    if (commandKey == ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2)
-    {
-        std::cout << "******************** NEVER CALLED" << std::endl;
-        ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
-        ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
-        HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
-        if (element != NULL)
-        {
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2_TILT, arg);
-            if (arg != NULL)
-            {
-                float tilt = arg->value.Float;
-                std::cout << "CENTER TILT " << tilt << std::endl;
-            }
-            HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATIONV2_PAN, arg);
-            if (arg != NULL)
-            {
-                float pan = arg->value.Float;
-            }
-        }
-    }
-     */
     /************************* SHOULD BE WRAPPED INSIDE PRIVATE METHODS IF NEEDED */
 
     // if the command received is a battery state changed
@@ -726,6 +709,10 @@ void Drone::commandReceived (eARCONTROLLER_DICTIONARY_KEY commandKey,
             d->cmdMaxRotationSpeedChanged(elementDictionary);
         case ARCONTROLLER_DICTIONARY_KEY_COMMON_CAMERASETTINGSSTATE_CAMERASETTINGSCHANGED:
             d->cmdCameraSettingsChanged(elementDictionary);
+        case
+            //TODO Deprecated, but V2 not working
+            ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATION:
+            d->cmdCameraDefaultOrientationChanged(elementDictionary);
         default:
             break;
     }
@@ -1226,6 +1213,27 @@ void Drone::cmdCameraSettingsChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementD
     }
 }
 
+void Drone::cmdCameraDefaultOrientationChanged(ARCONTROLLER_DICTIONARY_ELEMENT_t *elementDictionary) {
+    ARCONTROLLER_DICTIONARY_ARG_t *arg = NULL;
+    ARCONTROLLER_DICTIONARY_ELEMENT_t *element = NULL;
+    HASH_FIND_STR (elementDictionary, ARCONTROLLER_DICTIONARY_SINGLE_KEY, element);
+    if (element != NULL)
+    {
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATION_TILT, arg);
+        if (arg != NULL)
+        {
+            _default_tilt = arg->value.Float;
+        }
+        HASH_FIND_STR (element->arguments, ARCONTROLLER_DICTIONARY_KEY_ARDRONE3_CAMERASTATE_DEFAULTCAMERAORIENTATION_PAN, arg);
+        if (arg != NULL)
+        {
+            _default_pan = arg->value.Float;
+        }
+    }
+}
+
+
+
 /// PRIVATE
 
 /// *************************************************************************************** JSON CONFIG FILE. NOT USED v
@@ -1473,6 +1481,5 @@ bool Drone::isUsingFullNavdata() const{
 Fullnavdata *Drone::getFullNavdata() const {
     return _navdata;
 }
-
 
 
