@@ -1,5 +1,5 @@
 # Original license for navdataserver.c
-[@lukaslaobeyer/libdrone](https://github.com/lukaslaobeyer/libdrone) 
+[@lukaslaobeyer/libdrone](https://github.com/lukaslaobeyer/libdrone/tree/master/bebop-onboard/navdataserver) 
 
 ```
 The MIT License (MIT)

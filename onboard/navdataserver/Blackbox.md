@@ -2,7 +2,11 @@
 
 All data are provided as double (8 bytes), you may convert them to their true type.
 
-|	NAME	|	True type	|	Address \| 10	(	\|16	) |	Description	
+When enabled, blackbox file is under ``/data/ftp/internal_000/Debug/current/blackbox/light_run_0``.
+The file will grow approximately by 0.35Mo/s (->data @~340Hz) and will be fully replaced at each start.
+Pay attention, heavy logs are natively conserved inside `/data/ftp/internal_000/Debug/archive` !
+
+|	NAME	|	True type	|	Address\| 10	(	\|16	) |	Description	
 |	---	|	---	|	---			|	---	|
 |	BLDC_temperature_degC	|	INT16	|	0	(	0	)|		|
 |	RCarpet	|	FLOAT	|	8	(	8	)|		|

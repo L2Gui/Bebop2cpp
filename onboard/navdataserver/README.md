@@ -30,5 +30,5 @@ TODO
 
 Please read ``MANUAL_INSTALL.md``.
 
-# Copyright
-src/navdataserver.c is originally under MIT licence at [lukaslaobeyer/libdrone](https://github.com/lukaslaobeyer/libdrone) for bebop1.
+## Copyright
+src/navdataserver.c is originally under MIT licence at [lukaslaobeyer/libdrone](https://github.com/lukaslaobeyer/libdrone/tree/master/bebop-onboard/navdataserver) for bebop1.
