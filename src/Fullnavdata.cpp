@@ -7,6 +7,7 @@
 #include <boost/log/trivial.hpp>
 #include <boost/bind.hpp>
 #include <iostream>
+#include <chrono>
 
 #include "gnuplot_iostream.h"
 
@@ -76,32 +77,16 @@ void Fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
 {
     while(_spinlock.test_and_set(std::memory_order_acquire));
 
-    _gotNavdata = true;
     if(bytes_transferred < 1000)
     {
         return;
     }
 
-    /*
-    double pitch;
-    double roll;
-    double yaw;
-    double height;
-    double height_ultrasonic;
-    double pressure;
-    double vbat;
-    double latitude;
-    double longitude;
-    double gps_sats;
-    double gps_altitude;
-    double bat_percent;
-    double speed_x;
-    double speed_y;
-    double speed_z;
-    double gps_accuracy;
-    double gps_num_svs;
-    double gps_eph, gps_epv;
-    */
+    _received_time_computer = std::chrono::duration_cast<std::chrono::microseconds>
+            (std::chrono::system_clock::now().time_since_epoch()).count();
+
+    _gotNavdata = true;
+
 
     //warning: data type size must not be over 8 bytes
     double sensor_acc_raw_x_m_s2;
@@ -130,8 +115,11 @@ void Fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
     double test_y;
     double test_z;
 
+    double sent_time;
+
 
     int one = 16; //speed_ned_ref_x
+
 
     std::vector<std::pair<double *, int>> data_table = { // Firmware 4.0.6
             {&sensor_acc_raw_x_m_s2, 1240},         //ok
@@ -156,22 +144,13 @@ void Fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
             {&speed_body_y_m_s, 1528},              //ok
             {&speed_body_z_m_s, 1536},              //ok
 
+            {&sent_time, 1608},
+
             {&test_x, one},
             {&test_y, one+FULL_NAVDATA_DATASIZE},
             {&test_z, one+(2*FULL_NAVDATA_DATASIZE)}
 
     };
-
-/*
-    double d;
-    memcpy(&d, _navdata_buf.data() + 1440, FULL_NAVDATA_DATASIZE);
-
-    double t;
-    memcpy(&t, _navdata_buf.data() + 1336, FULL_NAVDATA_DATASIZE);
-
-    int64_t tt;
-    memcpy(&tt, _navdata_buf.data() + 1336, FULL_NAVDATA_DATASIZE);
-*/
 
     for(const std::pair<double *, int> &element : data_table)
     {
@@ -181,6 +160,9 @@ void Fullnavdata::navdataPacketReceived(const boost::system::error_code &error, 
                 FULL_NAVDATA_DATASIZE
         );
     }
+
+    _sent_drone_uptime = (int64_t) sent_time;
+
     _accelerometer_raw = Eigen::Vector3f(
             (float)sensor_acc_raw_x_m_s2,
             (float)sensor_acc_raw_y_m_s2,
@@ -244,7 +226,7 @@ void Fullnavdata::release(){
 
 /// ****** GETTERS
 
-bool Fullnavdata::receivedData() {
+bool Fullnavdata::receivedData() const {
     return _gotNavdata;
 }
 
@@ -274,4 +256,12 @@ Eigen::Vector3f Fullnavdata::get_gyroscope_filt() const {
 
 Eigen::Vector3f Fullnavdata::get_test() const {
     return _test;
+}
+
+int64_t Fullnavdata::get_sent_drone_uptime() const {
+    return _sent_drone_uptime;
+}
+
+int64_t Fullnavdata::get_received_time_computer() const {
+    return _received_time_computer;
 }

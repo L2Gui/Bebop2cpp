@@ -463,65 +463,65 @@ bool Drone::startStreamingEXPL()
 */
 
 /// ************************************************************************************************************ GETTERS
-bool Drone::isConnected() {
+bool Drone::isConnected() const {
     return _isConnected;
 }
 
-bool Drone::isValid() {
+bool Drone::isValid() const {
     return _isValid;
 }
 
-bool Drone::isStopped(){
+bool Drone::isStopped() const {
     return _deviceState == ARCONTROLLER_DEVICE_STATE_STOPPED;
 }
-bool Drone::isStarting(){
+bool Drone::isStarting() const {
     return _deviceState == ARCONTROLLER_DEVICE_STATE_STARTING;
 }
-bool Drone::isRunning() {
+bool Drone::isRunning() const {
     return _deviceState == ARCONTROLLER_DEVICE_STATE_RUNNING;
 }
-bool Drone::isPaused(){
+bool Drone::isPaused() const {
     return _deviceState == ARCONTROLLER_DEVICE_STATE_PAUSED;
 }
-bool Drone::isStopping(){
+bool Drone::isStopping() const {
     return _deviceState == ARCONTROLLER_DEVICE_STATE_STOPPING;
 }
 
-bool Drone::isFlying(){
+bool Drone::isFlying() const {
     return _flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING;
 }
-bool Drone::isHovering(){
+bool Drone::isHovering() const {
     return _flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING;
 }
-bool Drone::isLanded(){
+bool Drone::isLanded() const {
     return _flyingState == ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED;
 }
 
-bool Drone::errorStream() {
+bool Drone::errorStream() const {
     return _streamingState == ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ERROR;
 }
-bool Drone::isStreaming() {
+bool Drone::isStreaming() const {
     return  _streamingState == ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ENABLED;
 }
 
 
-int Drone::getBatteryLvl() {
+int Drone::getBatteryLvl() const {
     return _batteryLvl;
 }
 
-std::string Drone::getVideoPath() {
+const std::string Drone::getVideoPath() const {
     return _file_name;
 }
 
-float Drone::getRoll() {
+float Drone::getRoll() const {
     return _roll;
 }
 
-float Drone::getPitch() {
+float Drone::getPitch() const {
     return _pitch;
 }
 
-float Drone::getYaw() {
+float Drone::getYaw() const {
     return _yaw;
 }
 cv::Point3f Drone::getGyro() {
@@ -531,15 +531,15 @@ cv::Point3f Drone::getGyro() {
     return res;
 }
 
-float Drone::getSpeedX() {
+float Drone::getSpeedX() const {
     return _speedX;
 }
 
-float Drone::getSpeedY() {
+float Drone::getSpeedY() const {
     return _speedY;
 }
 
-float Drone::getSpeedZ() {
+float Drone::getSpeedZ() const {
     return _speedZ;
 }
 cv::Point3f Drone::getAccelero() {
@@ -1288,7 +1288,7 @@ bool Drone::setHullPresence(bool isPresent) {
     return error == ARCONTROLLER_OK;
 }
 
-bool Drone::isHullProtectionOn() {
+bool Drone::isHullProtectionOn() const {
     return _hullProtectionPresence;
 }
 
@@ -1305,15 +1305,15 @@ bool Drone::setVideoAutorecord(bool autoRecord, uint8_t storageId) {
     return error == ARCONTROLLER_OK;
 }
 
-bool Drone::isVideoAutorecordOn() {
+bool Drone::isVideoAutorecordOn() const{
     return _autorecordEnabled;
 }
 
-uint8_t Drone::getAutorecordStorageId() {
+uint8_t Drone::getAutorecordStorageId() const {
     return _autorecordStorageId;
 }
 
-std::string Drone::getIpAddress() {
+std::string Drone::getIpAddress() const {
     return _ip;
 }
 
@@ -1348,6 +1348,10 @@ bool Drone::useFullNavdata() {
     }
 }
 
-bool Drone::isUsingFullNavdata() {
+bool Drone::isUsingFullNavdata() const{
     return _navdata->receivedData();
+}
+
+Fullnavdata *Drone::getFullNavdata() const {
+    return _navdata;
 }

@@ -136,7 +136,7 @@ int main(){
             z3.pop_front();
         }
 */
-        d._navdata->lock();
+        d.getFullNavdata()->lock();
         vec = d._navdata->get_gyroscope_filt();
         vec2 = d._navdata->get_accelerometer_raw();
         //vec3 = d._navdata->get_magnetometer_raw();

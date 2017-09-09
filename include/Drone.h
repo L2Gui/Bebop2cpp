@@ -19,7 +19,6 @@ extern "C" {
 #define FIFO_DIR_PATTERN "/tmp/arsdk_XXXXXX"
 #define FIFO_NAME "arsdk_fifo"
 
-// TODO CHANGE TO THE NAME OR THE ADDRESS OF THE BEBOP
 #define TAG "BEBOP-CONTROLLER"
 
 #define BEBOP_DEFAULT_IP_ADDRESS "192.168.42.1"
@@ -56,59 +55,59 @@ public:
      * Check if the drone is connected
      * @return true if the drone is connected, false otherwise
      */
-    bool isConnected();
+    bool isConnected() const;
     /**
      * Check if the drone is valid. Call that method after instantiation to make sure everything went well
      * @return true if the drone is valid, false otherwise
      */
-    bool isValid();
+    bool isValid() const;
     /**
      * Check if the drone last status was stopped
      * @return true or false
      */
-    bool isStopped();
+    bool isStopped() const;
     /**
      * Check if the drone last status was starting (not able to process command yet)
      * @return true or false
      */
-    bool isStarting();
+    bool isStarting() const;
     /**
      * Check if the drone last status was running (can process command)
      * @return true or false
      */
-    bool isRunning();
+    bool isRunning() const;
     /**
      * Check if the drone last status was paused TODO check what that state actually is
      * @return true or false
      */
-    bool isPaused();
+    bool isPaused() const;
     /**
      * Check if the drone last status was stopping (not able to process command)
      * @return true or false
      */
-    bool isStopping();
+    bool isStopping() const;
     /**
      * Get the battery level in percentage
      * @return the last battery level the drone sent
      */
-    int getBatteryLvl();
+    int getBatteryLvl() const;
 
     /// ************************************************************************************************** FLYING STATUS
     /**
      * Check if the drone is in flying state
      * @return true or false
      */
-    bool isFlying();
+    bool isFlying() const;
     /**
      * Check if the drone is in flying hovering
      * @return true or false
      */
-    bool isHovering();
+    bool isHovering() const;
     /**
      * Check if the drone is in landed state
      * @return true or false
      */
-    bool isLanded();
+    bool isLanded() const;
 
 
     /// *********************************************************************************************** STREAMING STATUS
@@ -116,13 +115,13 @@ public:
      * Check if the drone is curently streaming
      * @return true or false
      */
-    bool isStreaming();
+    bool isStreaming() const;
     /**
      * Check if the drone encountered an issue while streaming (can be used to determine if the drone is simply not
      * streaming or if it had an issue while streaming)
      * @return true or false
      */
-    bool errorStream();
+    bool errorStream() const;
 
 
     /// ********************************************************************************** DRONE LIMITS & CONFIGURATIONS
@@ -131,7 +130,7 @@ public:
      * Get the Ip address of the drone
      * @return the ip address
      */
-    std::string getIpAddress();
+    std::string getIpAddress() const;
     /**
      * Set the max altitude the drone can reach
      * @param value in meters
@@ -145,7 +144,7 @@ public:
      * Get the max altitude the drone can reach
      * @return the value, in meters
      */
-    float getMaxAltitude();
+    float getMaxAltitude() const;
 
 
     /**
@@ -158,7 +157,7 @@ public:
      * Get the max tilt value
      * @return the value, in degrees
      */
-    float getMaxTilt();
+    float getMaxTilt() const;
 
     /**
      * Set the max vertical speed
@@ -170,7 +169,7 @@ public:
      * Get the max vertical speed value
      * @return the value, in m/s
      */
-    float getMaxVerticalSpeed();
+    float getMaxVerticalSpeed() const;
 
     /**
      * Set the max horizontal speed
@@ -189,7 +188,7 @@ public:
      * Get the max rotation speed value
      * @return the value, in degrees/s
      */
-    float getMaxRotationSpeed();
+    float getMaxRotationSpeed() const;
 
     /**
      * Set the presence of the hull protection. Helps with the onboard computations
@@ -202,7 +201,7 @@ public:
      * Returns the current knowledge regarding the hull protection of the drone
      * @return true if the drone thinks the hull protection is present, false otherwise
      */
-    bool isHullProtectionOn();
+    bool isHullProtectionOn() const;
 
     /**
      * Execute a flat trim if the drone is in landed state.
@@ -214,6 +213,7 @@ public:
 
     /// ************************************************************************************************ NAVDATA GETTERS
 
+    Fullnavdata* getFullNavdata() const;
     /**
      * Start using full navdata instead of Parrot 5Hz and limited navdata
      */
@@ -223,22 +223,22 @@ public:
      * Returns true if full navdata are used for that drone, false otherwise
      * @return true or false
      */
-    bool isUsingFullNavdata();
+    bool isUsingFullNavdata() const;
     /**
      * Get the last roll value received from the drone (expect the value to change 5 times per second)
      * @return Roll value in degrees
      */
-    float getRoll();
+    float getRoll() const;
     /**
      * Get the last pitch value received from the drone (expect the value to change 5 times per second)
      * @return Pitch value in degrees
      */
-    float getPitch();
+    float getPitch() const;
     /**
      * Get the last yaw value received from the drone (expect the value to change 5 times per second)
      * @return Yaw value in degrees
      */
-    float getYaw();
+    float getYaw() const;
 
     /**
      * Get the last values of the gyroscope received from the drone (expect the value to change 5 times per second)
@@ -249,17 +249,17 @@ public:
      * Get the last speedX value received from the drone (expect the value to change 5 times per second)
      * @return SpeedX value in m/s
      */
-    float getSpeedX();
+    float getSpeedX() const;
     /**
      * Get the last speedY value received from the drone (expect the value to change 5 times per second)
      * @return SpeedY value in m/s
      */
-    float getSpeedY();
+    float getSpeedY() const;
     /**
      * Get the last speedZ value received from the drone (expect the value to change 5 times per second)
      * @return SpeedZ value in m/s
      */
-    float getSpeedZ();
+    float getSpeedZ() const;
 
     /**
      * Get the last values of the accelerometer received from the drone (expect the value to change 5 times per second)
@@ -381,7 +381,7 @@ public:
      * Get the ugly file path where the streaming is outputed
      * @return path of the video (H264 codec format)
      */
-    std::string getVideoPath();
+    const std::string getVideoPath() const;
 
     /**
      * Set the video autorecord mode
@@ -397,15 +397,14 @@ public:
      * Get the video autorecord status
      * @return true if the autorecord mode is set, false otherwise
      */
-    bool isVideoAutorecordOn();
+    bool isVideoAutorecordOn() const;
 
     /**
      * Get the video autorecord storage id (relevent only if autorecord mode is set)
      * @return storageId
      */
-    uint8_t getAutorecordStorageId();
+    uint8_t getAutorecordStorageId() const;
 
-    Fullnavdata* _navdata;
 protected:
     /// *********************************************************************************** RETRIEVE DATA FROM THE DRONE
     static void stateChanged (eARCONTROLLER_DEVICE_STATE newState, eARCONTROLLER_ERROR error, void *drone);
@@ -503,6 +502,9 @@ private:
     eARCONTROLLER_DEVICE_STATE _deviceState;
     std::atomic<eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE> _flyingState;
     std::atomic<eARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED> _streamingState;
+
+public:
+    Fullnavdata* _navdata;
 
 };
 

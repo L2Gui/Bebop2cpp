@@ -79,5 +79,9 @@ target_link_libraries(fullNavDataOne bebop2cpp)
 add_executable(fullNavDataTwo demo/fullNavData_two.cpp)
 target_link_libraries(fullNavDataTwo bebop2cpp)
 
+
+add_executable(timestamp demo/timestamp.cpp)
+target_link_libraries(timestamp bebop2cpp)
+
 add_executable(test_kotani tuto/test_kotani.cpp)
 target_link_libraries(test_kotani bebop2cpp)
