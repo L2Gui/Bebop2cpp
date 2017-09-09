@@ -1,6 +1,6 @@
 # Bebop Navdata server
 
-Parrot sdk retransmits few data, and at 5Hz. This program will retransmit full navigation data at 100Hz.
+Parrot sdk retransmits few data, and at 5Hz. This program will retransmit full navigation data at 100Hz. It uses ~80kB/s of bandwidth.
 
 ## Automatic installation
 
