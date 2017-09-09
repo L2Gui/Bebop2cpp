@@ -11,7 +11,8 @@ See [onboard/navdataserver](onboard/navdataserver).
 
 ### Dependancies
 
-TODO
+The library requires C++11 and uses OpenCV3 , Eigen3 and some Boost components:
+system, filesystem, log, thread, chrono (required), iostreams, date_time, timer (for some demo files).
 
 ### Installing
 ```
