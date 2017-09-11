@@ -96,7 +96,6 @@ int main(){
     assert(d2.setVideoAutorecord(false));
     //assert(d.stopStreaming());
 
-    Eigen::initParallel();
     assert(d.useFullNavdata());
     assert(d2.useFullNavdata());
     sleep(1);

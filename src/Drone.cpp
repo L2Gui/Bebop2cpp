@@ -1445,7 +1445,7 @@ std::string Drone::getIpAddress() const {
 
 bool Drone::useFullNavdata() {
     if(not _usingFullNavdata) {
-
+        Eigen::initParallel();
         try{
             _navdata->init(_ip, FULL_NAVDATA_DEFAULT_PORT);
         }

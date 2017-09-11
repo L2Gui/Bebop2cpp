@@ -174,7 +174,6 @@ int main(){
 
     /** **/
     std::cout << "GO NAVDATA" << std::endl;
-    Eigen::initParallel();
     assert(d.useFullNavdata());
     sleep(1);
     assert(d.isUsingFullNavdata());
